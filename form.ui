@@ -1,0 +1,930 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Main</class>
+ <widget class="QMainWindow" name="Main">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>串口数据分析工具</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout_main">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab_data_analyze">
+       <attribute name="title">
+        <string>数据分析</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_analyze">
+        <item>
+         <widget class="QGroupBox" name="groupBox_input">
+          <property name="title">
+           <string>数据输入</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_input">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_input_controls">
+             <item>
+              <widget class="QLabel" name="label_input_hint">
+               <property name="text">
+                <string>请输入串口数据（十六进制，如：68 00 03）：</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_input">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_clear_input">
+               <property name="text">
+                <string>清空输入</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QTextEdit" name="textEdit_input">
+             <property name="placeholderText">
+              <string>输入示例：68 00 03 01 02 03 16
+可以多行输入，支持空格分隔</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_analyze_btn">
+             <item>
+              <spacer name="horizontalSpacer_btn_left">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_analyze">
+               <property name="minimumSize">
+                <size>
+                 <width>150</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>12</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="text">
+                <string>开始分析</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_btn_right">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_result">
+          <property name="title">
+           <string>分析结果</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_result">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_result_info">
+             <item>
+              <widget class="QLabel" name="label_total_frames">
+               <property name="text">
+                <string>总帧数：0</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_valid_frames">
+               <property name="text">
+                <string>有效帧：0</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_error_frames">
+               <property name="styleSheet">
+                <string notr="true">color: red;</string>
+               </property>
+               <property name="text">
+                <string>错误帧：0</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_result_info">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_view_history">
+               <property name="text">
+                <string>查看历史记录</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_export_result">
+               <property name="text">
+                <string>导出结果</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QTableWidget" name="tableWidget_frames">
+             <property name="editTriggers">
+              <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+             </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+             </property>
+             <property name="sortingEnabled">
+              <bool>false</bool>
+             </property>
+             <column>
+              <property name="text">
+               <string>帧序号</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>起始位置</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>结束位置</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>原始数据</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>解析结果</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>校验状态</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="groupBox_frame_detail">
+             <property name="title">
+              <string>帧详情</string>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_frame_detail">
+              <item>
+               <widget class="QTextEdit" name="textEdit_frame_detail">
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+                <property name="placeholderText">
+                 <string>点击表格中的某一帧，这里将显示该帧的详细解析信息</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_protocol_config">
+       <attribute name="title">
+        <string>协议配置</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_protocol">
+        <item>
+         <widget class="QGroupBox" name="groupBox_protocol_basic">
+          <property name="title">
+           <string>基本协议参数</string>
+          </property>
+          <layout class="QFormLayout" name="formLayout_protocol">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_frame_header">
+             <property name="text">
+              <string>帧头标识：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout_frame_header">
+             <item>
+              <widget class="QLineEdit" name="lineEdit_frame_header">
+               <property name="placeholderText">
+                <string>例如：68</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_frame_header_hint">
+               <property name="text">
+                <string>（十六进制）</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_frame_tail">
+             <property name="text">
+              <string>帧尾标识：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout_frame_tail">
+             <item>
+              <widget class="QLineEdit" name="lineEdit_frame_tail">
+               <property name="placeholderText">
+                <string>例如：16</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_frame_tail_hint">
+               <property name="text">
+                <string>（十六进制）</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_checksum_type">
+             <property name="text">
+              <string>校验方式：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="comboBox_checksum_type">
+             <item>
+              <property name="text">
+               <string>无校验</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>累加和</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>CRC16</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>CRC32</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>异或校验</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_checksum_position">
+             <property name="text">
+              <string>校验码位置：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout_checksum_pos">
+             <item>
+              <widget class="QRadioButton" name="radioButton_checksum_before_tail">
+               <property name="text">
+                <string>帧尾前</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="radioButton_checksum_after_tail">
+               <property name="text">
+                <string>帧尾后</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_checksum">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_checksum_length">
+             <property name="text">
+              <string>校验码字节数：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout_checksum_length">
+             <item>
+              <widget class="QSpinBox" name="spinBox_checksum_length">
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>4</number>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_checksum_length_hint">
+               <property name="text">
+                <string>字节（1-4）</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_checksum_length">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_checksum_range">
+             <property name="text">
+              <string>校验范围：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout_checksum_range">
+             <item>
+              <widget class="QLabel" name="label_start_offset">
+               <property name="text">
+                <string>起始偏移：</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="spinBox_checksum_start_offset">
+               <property name="toolTip">
+                <string>从帧头后第几个字节开始（0表示紧跟帧头）</string>
+               </property>
+               <property name="minimum">
+                <number>0</number>
+               </property>
+               <property name="maximum">
+                <number>100</number>
+               </property>
+               <property name="value">
+                <number>0</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_end_offset">
+               <property name="text">
+                <string>结束偏移：</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="spinBox_checksum_end_offset">
+               <property name="toolTip">
+                <string>负数表示从后往前数，-1表示到校验码前</string>
+               </property>
+               <property name="minimum">
+                <number>-100</number>
+               </property>
+               <property name="maximum">
+                <number>100</number>
+               </property>
+               <property name="value">
+                <number>-1</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_checksum_range">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_protocol_fields">
+          <property name="title">
+           <string>数据字段定义</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_fields">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_field_controls">
+             <item>
+              <widget class="QPushButton" name="btn_add_field">
+               <property name="text">
+                <string>添加字段</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_delete_field">
+               <property name="text">
+                <string>删除字段</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_move_up">
+               <property name="text">
+                <string>上移</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_move_down">
+               <property name="text">
+                <string>下移</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_field_controls">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QTableWidget" name="tableWidget_fields">
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+             </property>
+             <column>
+              <property name="text">
+               <string>序号</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>字段名称</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>字节数</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>数据类型</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>说明</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_protocol_buttons">
+          <item>
+           <spacer name="horizontalSpacer_protocol_buttons">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_save_protocol">
+            <property name="text">
+             <string>保存协议</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_load_protocol">
+            <property name="text">
+             <string>加载协议</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_reset_protocol">
+            <property name="text">
+             <string>重置</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_settings">
+       <attribute name="title">
+        <string>设置</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_settings">
+        <item>
+         <widget class="QGroupBox" name="groupBox_display_settings">
+          <property name="title">
+           <string>显示设置</string>
+          </property>
+          <layout class="QFormLayout" name="formLayout_display">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_font_size">
+             <property name="text">
+              <string>字体大小：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QSpinBox" name="spinBox_font_size">
+             <property name="minimum">
+              <number>8</number>
+             </property>
+             <property name="maximum">
+              <number>24</number>
+             </property>
+             <property name="value">
+              <number>10</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_theme">
+             <property name="text">
+              <string>主题：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="comboBox_theme">
+             <item>
+              <property name="text">
+               <string>浅色主题</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>深色主题</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_color_settings">
+          <property name="title">
+           <string>字段类型颜色配置</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_color">
+           <item>
+            <widget class="QLabel" name="label_color_hint">
+             <property name="text">
+              <string>配置不同字段类型在分析结果中的显示颜色：</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QScrollArea" name="scrollArea_colors">
+             <property name="widgetResizable">
+              <bool>true</bool>
+             </property>
+             <widget class="QWidget" name="scrollAreaWidgetContents_colors">
+              <property name="geometry">
+               <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>400</width>
+                <height>300</height>
+               </rect>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_colors"/>
+             </widget>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_color_buttons">
+             <item>
+              <widget class="QPushButton" name="btn_reset_colors">
+               <property name="text">
+                <string>恢复默认颜色</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_color">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_about">
+          <property name="title">
+           <string>关于</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_about">
+           <item>
+            <widget class="QLabel" name="label_version">
+             <property name="text">
+              <string>版本：V1.0</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_date">
+             <property name="text">
+              <string>日期：2025-11-01</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_description">
+             <property name="text">
+              <string>串口数据分析工具 - 用于解析和验证串口通信数据帧</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_settings">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_protocol_format">
+       <attribute name="title">
+        <string>协议格式说明</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_protocol_format">
+        <item>
+         <widget class="QTextBrowser" name="textBrowser_format_help">
+          <property name="html">
+           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;h2 style=&quot; margin-top:16px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:x-large; font-weight:600;&quot;&gt;协议JSON格式说明&lt;/span&gt;&lt;/h2&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;本工具支持两种JSON格式，会自动识别并转换：&lt;/p&gt;
+&lt;h3 style=&quot; margin-top:14px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:large; font-weight:600;&quot;&gt;1. 标准格式（推荐）&lt;/span&gt;&lt;/h3&gt;
+&lt;pre style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#f5f5f5;&quot;&gt;{
+  &amp;quot;protocol_name&amp;quot;: &amp;quot;协议名称&amp;quot;,
+  &amp;quot;version&amp;quot;: &amp;quot;1.0&amp;quot;,
+  &amp;quot;description&amp;quot;: &amp;quot;协议说明&amp;quot;,
+  &amp;quot;frame_header&amp;quot;: &amp;quot;68&amp;quot;,
+  &amp;quot;frame_tail&amp;quot;: &amp;quot;16&amp;quot;,
+  &amp;quot;checksum_config&amp;quot;: {
+    &amp;quot;checksum_type&amp;quot;: &amp;quot;累加和&amp;quot;,
+    &amp;quot;position&amp;quot;: &amp;quot;帧尾前&amp;quot;,
+    &amp;quot;start_offset&amp;quot;: 0,
+    &amp;quot;end_offset&amp;quot;: -1,
+    &amp;quot;checksum_length&amp;quot;: 1
+  },
+  &amp;quot;fields&amp;quot;: [
+    {
+      &amp;quot;name&amp;quot;: &amp;quot;字段名&amp;quot;,
+      &amp;quot;byte_count&amp;quot;: 1,
+      &amp;quot;field_type&amp;quot;: &amp;quot;uint8&amp;quot;,
+      &amp;quot;description&amp;quot;: &amp;quot;字段说明&amp;quot;,
+      &amp;quot;order&amp;quot;: 0
+    }
+  ]
+}&lt;/pre&gt;
+&lt;h3 style=&quot; margin-top:14px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:large; font-weight:600;&quot;&gt;2. 扩展格式（自动转换）&lt;/span&gt;&lt;/h3&gt;
+&lt;pre style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#f5f5f5;&quot;&gt;{
+  &amp;quot;protocol_name&amp;quot;: &amp;quot;工业协议&amp;quot;,
+  &amp;quot;fields&amp;quot;: [
+    {
+      &amp;quot;index&amp;quot;: 0,
+      &amp;quot;name&amp;quot;: &amp;quot;字段名&amp;quot;,
+      &amp;quot;byte_count&amp;quot;: 1,
+      &amp;quot;field_type&amp;quot;: &amp;quot;fixed&amp;quot;,
+      &amp;quot;format&amp;quot;: &amp;quot;HEX&amp;quot;,
+      &amp;quot;description&amp;quot;: &amp;quot;说明&amp;quot;
+    }
+  ]
+}&lt;/pre&gt;
+&lt;h3 style=&quot; margin-top:14px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:large; font-weight:600;&quot;&gt;字段说明&lt;/span&gt;&lt;/h3&gt;
+&lt;ul style=&quot;margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; -qt-list-indent: 1;&quot;&gt;&lt;li style=&quot; margin-top:12px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;checksum_type&lt;/span&gt;: 无校验/累加和/异或校验/CRC16/CRC32&lt;/li&gt;
+&lt;li style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;start_offset&lt;/span&gt;: 校验起始位置（0=帧头后第一个字节）&lt;/li&gt;
+&lt;li style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;end_offset&lt;/span&gt;: 校验结束位置（-1=校验码前）&lt;/li&gt;
+&lt;li style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;field_type&lt;/span&gt;: uint8/uint16/uint32/int8/int16/int32/float/double/bytes/string&lt;/li&gt;
+&lt;li style=&quot; margin-top:0px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;扩展格式的field_type&lt;/span&gt;: fixed/variable/command/array/checksum（会自动转换）&lt;/li&gt;&lt;/ul&gt;
+&lt;h3 style=&quot; margin-top:14px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:large; font-weight:600;&quot;&gt;提示&lt;/span&gt;&lt;/h3&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;1. 可以让AI助手根据协议文档生成JSON文件&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;2. 扩展格式会自动转换为标准格式&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;3. 帧头、帧尾、校验码无需在fields中定义&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;4. 字段顺序会自动按order排序&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1200</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_file">
+    <property name="title">
+     <string>文件</string>
+    </property>
+    <addaction name="action_open"/>
+    <addaction name="action_save"/>
+    <addaction name="separator"/>
+    <addaction name="action_exit"/>
+   </widget>
+   <widget class="QMenu" name="menu_help">
+    <property name="title">
+     <string>帮助</string>
+    </property>
+    <addaction name="action_help"/>
+    <addaction name="action_about"/>
+   </widget>
+   <addaction name="menu_file"/>
+   <addaction name="menu_help"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="action_open">
+   <property name="text">
+    <string>打开</string>
+   </property>
+  </action>
+  <action name="action_save">
+   <property name="text">
+    <string>保存</string>
+   </property>
+  </action>
+  <action name="action_exit">
+   <property name="text">
+    <string>退出</string>
+   </property>
+  </action>
+  <action name="action_help">
+   <property name="text">
+    <string>帮助文档</string>
+   </property>
+  </action>
+  <action name="action_about">
+   <property name="text">
+    <string>关于</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,60 @@
+{
+  "protocol_name": "工业设备测试协议",
+  "version": "1.0",
+  "description": "工业设备通信协议 - 扩展格式测试",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1
+  },
+  "fields": [
+    {
+      "index": 0,
+      "name": "设备地址",
+      "byte_count": 1,
+      "field_type": "fixed",
+      "value": "0x01",
+      "format": "HEX",
+      "description": "设备固定地址"
+    },
+    {
+      "index": 1,
+      "name": "测试ID",
+      "byte_count": 1,
+      "field_type": "command",
+      "format": "HEX",
+      "description": "测试命令码"
+    },
+    {
+      "index": "2-51",
+      "name": "IMEI",
+      "byte_count": 50,
+      "field_type": "array",
+      "format": "ASCII",
+      "description": "设备IMEI号码，50字节数组"
+    },
+    {
+      "index": 52,
+      "name": "电压",
+      "byte_count": 2,
+      "field_type": "variable",
+      "format": "HEX",
+      "description": "设备电压读数"
+    },
+    {
+      "index": 54,
+      "name": "温度",
+      "byte_count": 2,
+      "field_type": "variable",
+      "format": "HEX",
+      "description": "设备温度读数"
+    }
+  ],
+  "special_notes": [
+    "扩展格式会自动转换为标准格式",
+    "field_type支持: fixed/variable/command/array/checksum"
+  ]
+}

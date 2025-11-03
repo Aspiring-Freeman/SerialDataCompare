@@ -1,0 +1,45 @@
+{
+  "protocol_name": "示例协议",
+  "version": "1.0",
+  "description": "这是一个串口数据协议示例配置",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1
+  },
+  "fields": [
+    {
+      "name": "设备地址",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "设备的唯一地址标识",
+      "order": 0
+    },
+    {
+      "name": "命令码",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "命令类型：01=读取，02=写入，03=查询",
+      "order": 1
+    },
+    {
+      "name": "数据长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "后续数据域的字节长度",
+      "order": 2
+    },
+    {
+      "name": "数据域",
+      "byte_count": 0,
+      "field_type": "bytes",
+      "description": "实际数据内容，长度由数据长度字段决定",
+      "order": 3,
+      "length_field": "数据长度"
+    }
+  ]
+}

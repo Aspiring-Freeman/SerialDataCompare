@@ -1,0 +1,156 @@
+{
+  "protocol_name": "工业通信器物协议",
+  "version": "1.0",
+  "description": "工业通信器物档案协议规格（修正版）",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": -1,
+    "end_offset": -2,
+    "checksum_length": 1
+  },
+  "fields": [
+    {
+      "name": "设备测试标识",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "设备测试命令标识",
+      "order": 0
+    },
+    {
+      "name": "命令码",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "具体的命令类型",
+      "order": 1
+    },
+    {
+      "name": "整包长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "一帧所有的字节",
+      "order": 2
+    },
+    {
+      "name": "工位号",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "工位",
+      "order": 3
+    },
+    {
+      "name": "3.6V电压",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "3.6V电池电压(供电电压) - 小端序",
+      "order": 4
+    },
+    {
+      "name": "3.6V模组电压",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "3.6V模组电压(供电电压) - 小端序",
+      "order": 5
+    },
+    {
+      "name": "3.6V电池电压",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "3.6V电池电压(协议获取) - 小端序",
+      "order": 6
+    },
+    {
+      "name": "3.3V_LDO",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "3.3V LDO输出电压 - 小端序",
+      "order": 7
+    },
+    {
+      "name": "静态功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "静态功耗 - 小端序",
+      "order": 8
+    },
+    {
+      "name": "运行功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "运行功耗 - 小端序",
+      "order": 9
+    },
+    {
+      "name": "IMEI号",
+      "byte_count": 15,
+      "field_type": "bytes",
+      "description": "IMEI号",
+      "order": 10
+    },
+    {
+      "name": "IMSI号",
+      "byte_count": 15,
+      "field_type": "bytes",
+      "description": "IMSI号",
+      "order": 11
+    },
+    {
+      "name": "ICCID号",
+      "byte_count": 20,
+      "field_type": "bytes",
+      "description": "ICCID号",
+      "order": 12
+    },
+    {
+      "name": "Csq信号强度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "Csq信号强度或小无线模块标志位",
+      "order": 13
+    },
+    {
+      "name": "flash校验标识",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "flash检测 0异常 1正常",
+      "order": 14
+    },
+    {
+      "name": "蓝牙校验标识",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "蓝牙检测 0异常 1正常",
+      "order": 15
+    },
+    {
+      "name": "板载压力传感器",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "板载压力传感器 - 小端序",
+      "order": 16
+    },
+    {
+      "name": "外接压力传感器",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "外接压力传感器 - 小端序",
+      "order": 17
+    },
+    {
+      "name": "程序版本",
+      "byte_count": 2,
+      "field_type": "bytes",
+      "description": "程序版本号",
+      "order": 18
+    },
+    {
+      "name": "编译时间",
+      "byte_count": 6,
+      "field_type": "bytes",
+      "description": "编译时间 - 小端模式，相对2000年的偏移",
+      "order": 19
+    }
+  ]
+}
