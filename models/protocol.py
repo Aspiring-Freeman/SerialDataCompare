@@ -167,21 +167,41 @@ class ProtocolConfig:
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典（用于JSON保存）"""
-        return {
+        result = {
             'protocol_name': self.protocol_name,
             'version': self.version,
             'description': self.description,
             'frame_header': self.frame_header,
             'frame_tail': self.frame_tail,
-            'checksum_config': {
-                'checksum_type': self.checksum_config.checksum_type.value,
-                'position': self.checksum_config.position.value,
-                'start_offset': self.checksum_config.start_offset,
-                'end_offset': self.checksum_config.end_offset,
-                'checksum_length': self.checksum_config.checksum_length
-            },
-            'fields': [f.to_dict() for f in self.fields]
         }
+        
+        # 添加可选的帧配置字段
+        if self.frame_length is not None:
+            result['frame_length'] = self.frame_length
+        if self.length_field_name is not None:
+            result['length_field_name'] = self.length_field_name
+        
+        # 构建校验配置
+        checksum_config = {
+            'checksum_type': self.checksum_config.checksum_type.value,
+            'position': self.checksum_config.position.value,
+            'start_offset': self.checksum_config.start_offset,
+            'end_offset': self.checksum_config.end_offset,
+            'checksum_length': self.checksum_config.checksum_length
+        }
+        
+        # 添加简化配置字段（如果存在）
+        if self.checksum_config.checksum_position is not None:
+            checksum_config['checksum_position'] = self.checksum_config.checksum_position
+        if self.checksum_config.checksum_start is not None:
+            checksum_config['checksum_start'] = self.checksum_config.checksum_start
+        if self.checksum_config.checksum_end is not None:
+            checksum_config['checksum_end'] = self.checksum_config.checksum_end
+        
+        result['checksum_config'] = checksum_config
+        result['fields'] = [f.to_dict() for f in self.fields]
+        
+        return result
     
     @staticmethod
     def _convert_checksum_type(checksum_type_str: str) -> ChecksumType:

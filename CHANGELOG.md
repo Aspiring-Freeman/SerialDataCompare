@@ -1,5 +1,25 @@
 # 变更日志 (CHANGELOG)
 
+## [1.3.2] - 2025-11-20
+
+### 🐛 Bug 修复
+- 修复 UI 中使用 emoji 字符导致的 UTF-8 编码错误（`UnicodeEncodeError: surrogates not allowed`）
+- 修复 `ProtocolConfig.to_dict()` 方法未保存简化配置字段的问题（`frame_length`, `checksum_position`, `checksum_start`, `checksum_end`）
+
+### 🎨 UI/UX 改进
+- 简化校验范围标签文本（"到（不含）" → "到"），避免界面布局偏移
+- 为校验范围控件添加详细的工具提示（tooltip），说明 Python 切片语义
+- 新增提示标签："[提示] 结束位置不包含，如'从0到81'实际计算0~80"
+- 优化控件间距，添加水平间隔器改善布局
+
+### 📚 文档更新
+- 在 `PROTOCOL_CONFIG_GUIDE.md` 中添加 Python 切片语义的详细说明和警告
+- 增加两个完整的协议配置案例（83字节和106字节帧）及 ASCII 图示
+- 说明 GUI 显示与实际计算范围的对应关系
+
+### 🔧 项目管理
+- 整理测试脚本：创建 `tests/` 文件夹，移动 9 个测试文件（`analyze_*.py`, `test_*.py`, `verify_*.py`, `diagnose_*.py`）
+
 ## [1.3.1] - 2025-11-19
 
 ### 🎉 新增功能

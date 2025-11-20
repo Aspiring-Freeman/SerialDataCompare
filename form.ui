@@ -452,14 +452,18 @@
                <item>
                 <widget class="QLabel" name="label_checksum_calc_from">
                  <property name="text">
-                  <string>校验计算范围：从：</string>
+                  <string>校验计算范围：从</string>
+                 </property>
+                 <property name="toolTip">
+                  <string>校验计算起始位置（包含此位置）</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QSpinBox" name="spinBox_checksum_start">
                  <property name="toolTip">
-                  <string>校验计算的起始位置（绝对索引）</string>
+                  <string>校验计算的起始位置（包含此位置）
+从这个位置开始计算校验和</string>
                  </property>
                  <property name="minimum">
                   <number>0</number>
@@ -475,14 +479,19 @@
                <item>
                 <widget class="QLabel" name="label_checksum_calc_to">
                  <property name="text">
-                  <string>到：</string>
+                  <string>到</string>
+                 </property>
+                 <property name="toolTip">
+                  <string>校验计算结束位置（不包含此位置）</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QSpinBox" name="spinBox_checksum_end">
                  <property name="toolTip">
-                  <string>校验计算的结束位置（绝对索引）</string>
+                  <string>校验计算结束位置（不包含此位置）
+例如：从0到81，实际计算位置0~80共81个字节
+位置81（通常是校验码）不参与计算</string>
                  </property>
                  <property name="minimum">
                   <number>0</number>
@@ -495,7 +504,30 @@
                  </property>
                 </widget>
                </item>
+               <item>
+                <spacer name="horizontalSpacer_checksum_calc">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
               </layout>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_checksum_range_hint">
+               <property name="text">
+                <string>[提示] 结束位置不包含，如"从0到81"实际计算0~80</string>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">color: #666; font-size: 10pt;</string>
+               </property>
+              </widget>
              </item>
             </layout>
            </item>
