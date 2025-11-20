@@ -68,9 +68,26 @@ class Main(QMainWindow):
         # 初始化
         self.init_protocol()
         self.setup_connections()
+        self.setup_checksum_ui_logic()  # 设置校验UI逻辑
         self.update_ui_from_protocol()
         self.setup_history_menu()
         self.setup_color_config_ui()
+    
+    def setup_checksum_ui_logic(self):
+        """设置校验配置UI逻辑"""
+        # 连接复选框信号，控制简化配置的启用/禁用
+        self.ui.checkBox_use_absolute_position.stateChanged.connect(self.on_absolute_position_changed)
+    
+    def on_absolute_position_changed(self, state):
+        """简化配置复选框状态改变"""
+        enabled = (state == 2)  # Qt.Checked = 2
+        self.ui.spinBox_checksum_position.setEnabled(enabled)
+        self.ui.spinBox_checksum_start.setEnabled(enabled)
+        self.ui.spinBox_checksum_end.setEnabled(enabled)
+        
+        # 禁用旧配置
+        self.ui.spinBox_checksum_start_offset.setEnabled(not enabled)
+        self.ui.spinBox_checksum_end_offset.setEnabled(not enabled)
         
     def init_protocol(self):
         """初始化协议配置"""
@@ -300,7 +317,7 @@ class Main(QMainWindow):
             
             # 添加到历史记录
             self.analysis_history.add_analysis(
-                protocol_name=self.current_protocol.name,
+                protocol_name=self.current_protocol.protocol_name,
                 input_data=input_data,
                 total_frames=result.get_total_frames(),
                 valid_frames=result.get_valid_frames(),
@@ -358,6 +375,12 @@ class Main(QMainWindow):
         self.ui.lineEdit_frame_header.setText(self.current_protocol.frame_header)
         self.ui.lineEdit_frame_tail.setText(self.current_protocol.frame_tail)
         
+        # 固定帧长度
+        if self.current_protocol.frame_length:
+            self.ui.spinBox_frame_length.setValue(self.current_protocol.frame_length)
+        else:
+            self.ui.spinBox_frame_length.setValue(0)
+        
         # 校验类型
         checksum_type_map = {
             ChecksumType.NONE: 0,
@@ -375,10 +398,33 @@ class Main(QMainWindow):
         else:
             self.ui.radioButton_checksum_after_tail.setChecked(True)
         
-        # 校验范围配置
+        # 校验码字节数
         self.ui.spinBox_checksum_length.setValue(self.current_protocol.checksum_config.checksum_length)
-        self.ui.spinBox_checksum_start_offset.setValue(self.current_protocol.checksum_config.start_offset)
-        self.ui.spinBox_checksum_end_offset.setValue(self.current_protocol.checksum_config.end_offset)
+        
+        # 检查是否使用简化配置
+        use_absolute = (self.current_protocol.checksum_config.checksum_position is not None or
+                       self.current_protocol.checksum_config.checksum_start is not None or
+                       self.current_protocol.checksum_config.checksum_end is not None)
+        
+        self.ui.checkBox_use_absolute_position.setChecked(use_absolute)
+        
+        if use_absolute:
+            # 简化配置
+            if self.current_protocol.checksum_config.checksum_position is not None:
+                self.ui.spinBox_checksum_position.setValue(
+                    self.current_protocol.checksum_config.checksum_position)
+            if self.current_protocol.checksum_config.checksum_start is not None:
+                self.ui.spinBox_checksum_start.setValue(
+                    self.current_protocol.checksum_config.checksum_start)
+            if self.current_protocol.checksum_config.checksum_end is not None:
+                self.ui.spinBox_checksum_end.setValue(
+                    self.current_protocol.checksum_config.checksum_end)
+        else:
+            # 旧版配置
+            self.ui.spinBox_checksum_start_offset.setValue(
+                self.current_protocol.checksum_config.start_offset)
+            self.ui.spinBox_checksum_end_offset.setValue(
+                self.current_protocol.checksum_config.end_offset)
         
         # 填充字段表格
         self.fill_fields_table()
@@ -388,6 +434,10 @@ class Main(QMainWindow):
         # 基本参数
         self.current_protocol.frame_header = self.ui.lineEdit_frame_header.text().strip()
         self.current_protocol.frame_tail = self.ui.lineEdit_frame_tail.text().strip()
+        
+        # 固定帧长度
+        frame_length = self.ui.spinBox_frame_length.value()
+        self.current_protocol.frame_length = frame_length if frame_length > 0 else None
         
         # 校验类型
         checksum_types = [
@@ -407,10 +457,26 @@ class Main(QMainWindow):
         else:
             self.current_protocol.checksum_config.position = ChecksumPosition.AFTER_TAIL
         
-        # 校验范围配置
+        # 校验码字节数
         self.current_protocol.checksum_config.checksum_length = self.ui.spinBox_checksum_length.value()
-        self.current_protocol.checksum_config.start_offset = self.ui.spinBox_checksum_start_offset.value()
-        self.current_protocol.checksum_config.end_offset = self.ui.spinBox_checksum_end_offset.value()
+        
+        # 根据是否使用简化配置来设置不同的值
+        if self.ui.checkBox_use_absolute_position.isChecked():
+            # 使用简化配置
+            self.current_protocol.checksum_config.checksum_position = self.ui.spinBox_checksum_position.value()
+            self.current_protocol.checksum_config.checksum_start = self.ui.spinBox_checksum_start.value()
+            self.current_protocol.checksum_config.checksum_end = self.ui.spinBox_checksum_end.value()
+            # 清除旧配置（设为默认值）
+            self.current_protocol.checksum_config.start_offset = 0
+            self.current_protocol.checksum_config.end_offset = -1
+        else:
+            # 使用旧版配置
+            self.current_protocol.checksum_config.start_offset = self.ui.spinBox_checksum_start_offset.value()
+            self.current_protocol.checksum_config.end_offset = self.ui.spinBox_checksum_end_offset.value()
+            # 清除简化配置
+            self.current_protocol.checksum_config.checksum_position = None
+            self.current_protocol.checksum_config.checksum_start = None
+            self.current_protocol.checksum_config.checksum_end = None
         
         # 从表格更新字段信息
         self.update_fields_from_table()

@@ -102,69 +102,82 @@ class ChecksumValidator:
     
     @staticmethod
     def validate_frame(frame_data: bytes, 
-                      checksum_type: ChecksumType,
-                      start_offset: int = 0,
-                      end_offset: int = -1,
-                      checksum_length: int = 1) -> tuple[bool, int, int]:
+                      checksum_config) -> tuple[bool, int, int]:
         """
-        验证数据帧的校验码
+        验证数据帧的校验码（简化版）
         
         Args:
             frame_data: 完整的帧数据（包括帧头、数据、校验码、帧尾）
-            checksum_type: 校验类型
-            start_offset: 校验起始偏移（从帧头后开始计数，0表示紧跟帧头）
-            end_offset: 校验结束偏移（-1表示到校验码前，-2表示到帧尾前等）
-            checksum_length: 校验码字节数
+            checksum_config: ChecksumConfig对象
             
         Returns:
             (是否通过, 期望校验值, 实际校验值)
         """
+        checksum_type = checksum_config.checksum_type
+        
         if checksum_type == ChecksumType.NONE:
             return True, 0, 0
         
-        if len(frame_data) < checksum_length + 2:  # 至少要有帧头+校验码+帧尾
+        if len(frame_data) < checksum_config.checksum_length + 2:
             return False, 0, 0
         
         try:
-            # 提取校验码
-            # 假设校验码在帧尾前（最常见的情况）
-            checksum_start = len(frame_data) - 1 - checksum_length  # 帧尾前
-            actual_checksum_bytes = frame_data[checksum_start:checksum_start + checksum_length]
-            
-            # 根据校验码长度转换为整数
-            if checksum_length == 1:
-                actual_checksum = actual_checksum_bytes[0]
-            elif checksum_length == 2:
-                actual_checksum = struct.unpack('<H', actual_checksum_bytes)[0]  # 小端序
-            elif checksum_length == 4:
-                actual_checksum = struct.unpack('<I', actual_checksum_bytes)[0]  # 小端序
+            # 优先使用新的简化配置
+            if checksum_config.checksum_position is not None:
+                # 直接使用绝对位置提取校验码
+                checksum_start = checksum_config.checksum_position
+                checksum_end = checksum_start + checksum_config.checksum_length
+                
+                if checksum_end > len(frame_data):
+                    return False, 0, 0
+                
+                actual_checksum_bytes = frame_data[checksum_start:checksum_end]
             else:
-                # 多字节情况，转为整数
+                # 使用旧版相对位置（兼容模式）
+                checksum_start = len(frame_data) - 1 - checksum_config.checksum_length
+                actual_checksum_bytes = frame_data[checksum_start:checksum_start + checksum_config.checksum_length]
+            
+            # 转换校验码为整数
+            if checksum_config.checksum_length == 1:
+                actual_checksum = actual_checksum_bytes[0]
+            elif checksum_config.checksum_length == 2:
+                actual_checksum = struct.unpack('<H', actual_checksum_bytes)[0]
+            elif checksum_config.checksum_length == 4:
+                actual_checksum = struct.unpack('<I', actual_checksum_bytes)[0]
+            else:
                 actual_checksum = int.from_bytes(actual_checksum_bytes, byteorder='little')
             
-            # 确定要校验的数据范围
-            # start_offset: -1表示包含帧头(索引0)，0表示帧头后第一个字节(索引1)，1表示跳过一个字节(索引2)
-            # end_offset: -1表示到帧尾前(校验码后)，-2表示到校验码前，正数表示具体索引
-            
-            if start_offset == -1:
-                # 包含帧头
+            # 确定校验计算范围（优先使用新配置）
+            if checksum_config.checksum_start is not None and checksum_config.checksum_end is not None:
+                # 使用绝对位置范围
+                data_start = checksum_config.checksum_start
+                data_end = checksum_config.checksum_end
+            elif checksum_config.checksum_start is not None:
+                # 只指定了起始位置，到校验码前
+                data_start = checksum_config.checksum_start
+                data_end = checksum_config.checksum_position if checksum_config.checksum_position else checksum_start
+            elif checksum_config.checksum_end is not None:
+                # 只指定了结束位置，从帧头开始
                 data_start = 0
+                data_end = checksum_config.checksum_end
             else:
-                # 从帧头后开始，跳过start_offset个字节
-                data_start = 1 + start_offset
-            
-            if end_offset == -1:
-                # 到帧尾前（即校验码后）
-                data_end = len(frame_data) - 1
-            elif end_offset == -2:
-                # 到校验码前
-                data_end = checksum_start
-            elif end_offset < 0:
-                # 其他负数：从尾部开始计数
-                data_end = len(frame_data) + end_offset
-            else:
-                # 正数：直接使用索引
-                data_end = end_offset
+                # 使用旧版offset配置（兼容模式）
+                if checksum_config.start_offset == -1:
+                    data_start = 0
+                else:
+                    data_start = 1 + checksum_config.start_offset
+                
+                if checksum_config.end_offset == 0:
+                    data_end = checksum_start
+                elif checksum_config.end_offset == -1:
+                    data_end = len(frame_data) - 1
+                elif checksum_config.end_offset < 0:
+                    data_end = len(frame_data) + checksum_config.end_offset + 1
+                else:
+                    if checksum_config.end_offset < 100:
+                        data_end = data_start + checksum_config.end_offset
+                    else:
+                        data_end = checksum_config.end_offset
             
             # 提取要校验的数据
             data_to_check = frame_data[data_start:data_end]
@@ -172,7 +185,7 @@ class ChecksumValidator:
             # 计算期望的校验值
             expected_checksum = ChecksumCalculator.calculate(data_to_check, checksum_type)
             
-            # 对于CRC16和CRC32，需要根据校验码长度截取
+            # 根据校验类型截取相应位数
             if checksum_type == ChecksumType.CRC16:
                 expected_checksum &= 0xFFFF
             elif checksum_type == ChecksumType.CRC32:
@@ -187,6 +200,8 @@ class ChecksumValidator:
             
         except Exception as e:
             print(f"校验验证出错: {e}")
+            import traceback
+            traceback.print_exc()
             return False, 0, 0
     
     @staticmethod

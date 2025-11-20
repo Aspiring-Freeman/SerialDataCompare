@@ -1,5 +1,84 @@
 # 变更日志 (CHANGELOG)
 
+## [1.3.1] - 2025-11-19
+
+### 🎉 新增功能
+
+#### 1. 简化协议配置（重大更新）
+- **新增绝对位置配置方式**：更直观、更易用的协议配置
+  - `frame_length`：直接指定固定帧长度，避免数据中伪帧尾干扰
+  - `checksum_position`：校验码在帧中的绝对位置（从0开始索引）
+  - `checksum_start` 和 `checksum_end`：校验计算的绝对起止位置
+  - 完全兼容旧版 `start_offset` 和 `end_offset` 配置
+
+#### 2. GUI 界面增强
+- 协议配置界面新增"固定帧长度"输入框
+- 新增"简化配置"选项组
+  - "使用绝对位置"复选框
+  - 校验码位置绝对索引输入
+  - 校验计算范围（从/到）输入
+- 简化配置与旧版配置可自由切换，互不干扰
+
+#### 3. 更强壮的帧解析逻辑
+- **多策略帧识别**：
+  1. 优先使用固定帧长度（`frame_length`）
+  2. 其次使用长度字段动态计算（`length_field_name`）
+  3. 最后降级到帧头+帧尾搜索
+- 避免数据负载中包含帧尾标识导致的错误截断
+
+### 🐛 Bug 修复
+- 修复 UI 控件名称错误（`spinBox_checksum_abs_*` 不存在）导致的 AttributeError
+- 修复 UI 表单 FormLayout 行号重叠导致的控件显示重叠
+- 修复 `ChecksumType` 枚举转换引用不存在的 CRC8 类型
+- 修复 `protocol.name` 应为 `protocol.protocol_name` 的属性错误
+- 修复校验范围负偏移语义错误（`end_offset=-1` 含义修正）
+
+### 📚 文档更新
+- 新增 `PROTOCOL_CONFIG_GUIDE.md`：简化配置完整使用指南
+- 新增 `CONFIG_QUICK_REFERENCE.md`：配置字段快速参考表
+- 新增 `protocol_simple_example.json`：简化配置示例文件
+- 更新 Langhua.json 为简化配置格式（实际案例）
+- 在配置指南中添加 Langhua 协议配置诊断和解决过程
+
+### 🔧 代码改进
+- 重构 `DataParser.find_frames`：实现多策略帧识别
+- 重构 `ChecksumValidator.validate_frame`：支持绝对位置和旧版配置
+- 优化 `ProtocolConfig.from_dict`：自动识别并转换配置格式
+- 改进 `_convert_checksum_type`：移除不存在的 CRC8 映射，增强容错
+
+### 💡 技术亮点
+- **配置优先级**：绝对位置配置 > 偏移量配置（自动判断）
+- **帧识别优先级**：固定长度 > 长度字段 > 帧尾搜索
+- **UI 状态联动**：简化配置启用时自动禁用旧版配置输入
+- **完全向后兼容**：旧版协议配置文件无需修改仍可正常使用
+
+### 📦 配置迁移示例
+
+**旧版配置**：
+```json
+{
+  "checksum_config": {
+    "position": "帧尾后",
+    "start_offset": 0,
+    "end_offset": -1
+  }
+}
+```
+
+**新版简化配置（推荐）**：
+```json
+{
+  "frame_length": 106,
+  "checksum_config": {
+    "checksum_position": 104,
+    "checksum_start": 0,
+    "checksum_end": 104
+  }
+}
+```
+
+---
+
 ## [1.3.0] - 2025-11-01
 
 ### 🎉 新增功能

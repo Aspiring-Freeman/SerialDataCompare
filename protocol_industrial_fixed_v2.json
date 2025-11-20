@@ -1,0 +1,257 @@
+{
+  "protocol_name": "工业通信器物协议_简化版",
+  "version": "1.2",
+  "description": "工业通信器物档案协议规格（简化配置：固定帧长度+绝对位置）",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "frame_length": 106,
+  "checksum_config": {
+    "checksum_type": "sum",
+    "checksum_position": 104,
+    "checksum_length": 1,
+    "checksum_start": 0,
+    "checksum_end": 104
+  },
+  "fields": [
+    {
+      "name": "设备测试标识",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "返回测试结果指示位",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "整包长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "一帧所有的字节",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "工位号",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "工位",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "主电电压(供电电压)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "主电电压供电电压",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "主电电压(协议获取)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "主电电压协议获取",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "静态功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "静态功耗",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "满水功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "满水功耗",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "走水功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "走水功耗",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "备电/NB/扩频电压(供电电压)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "备电/NB/扩频电压供电电压",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "备电/NB/扩频电压(协议获取)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "备电/NB/扩频电压协议获取",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "备电/NB/扩频功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "备电/NB/扩频功耗",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "蓝牙检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "0异常 1正常",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "flash检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "0异常 1正常",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "计量",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "0异常 1正常",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "红外通信",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "0异常 1正常",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "IMEI号",
+      "byte_count": 15,
+      "field_type": "string",
+      "description": "IMEI",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "IMSI号",
+      "byte_count": 15,
+      "field_type": "string",
+      "description": "IMSI",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "ICCID号",
+      "byte_count": 20,
+      "field_type": "string",
+      "description": "ICCID",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "CSQ",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "信号强度",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "阀门状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "阀门状态",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "阀门到位状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "阀门到位状态",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "EEPROM状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "EEPROM状态",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "GP30电压",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "GP30电压",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "loraEUI",
+      "byte_count": 16,
+      "field_type": "bytes",
+      "description": "loraEUI",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "强磁检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "强磁检测",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "开盖",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "开盖",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "GPS模组状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "GPS模组状态",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "无磁模组信号强度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "无磁模组信号强度",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "校验码字段",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "数据中的校验码字段（不是帧校验码）",
+      "order": 0,
+      "length_field": null
+    },
+    {
+      "name": "程序版本号",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "程序版本号",
+      "order": 0,
+      "length_field": null
+    }
+  ]
+}

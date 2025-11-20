@@ -56,7 +56,12 @@ class DataParser:
     
     def find_frames(self, data: bytes) -> List[tuple[int, int]]:
         """
-        在数据中查找所有帧的位置
+        在数据中查找所有帧的位置（增强版，支持多种分帧策略）
+        
+        分帧策略优先级：
+        1. 如果配置了 frame_length，使用固定长度分帧
+        2. 如果配置了 length_field_name，读取长度字段值进行分帧
+        3. 否则使用传统的帧头+帧尾查找方式
         
         Args:
             data: 原始字节数据
@@ -67,6 +72,8 @@ class DataParser:
         frames = []
         header = self.protocol.get_header_bytes()
         tail = self.protocol.get_tail_bytes()
+        header_len = len(header)
+        tail_len = len(tail)
         
         pos = 0
         while pos < len(data):
@@ -75,20 +82,82 @@ class DataParser:
             if header_pos == -1:
                 break
             
-            # 从帧头后查找帧尾
-            search_start = header_pos + len(header)
-            tail_pos = data.find(tail, search_start)
+            frame_end = None
             
-            if tail_pos == -1:
-                # 没有找到帧尾，可能是不完整的帧
-                break
+            # 策略1: 使用固定帧长度
+            if self.protocol.frame_length is not None:
+                frame_end = header_pos + self.protocol.frame_length
+                if frame_end > len(data):
+                    # 数据不足，帧不完整
+                    break
+                    
+            # 策略2: 从数据中读取长度字段
+            elif self.protocol.length_field_name is not None:
+                try:
+                    # 查找长度字段定义
+                    length_field = None
+                    length_offset = header_len  # 从帧头后开始计算偏移
+                    
+                    for field_def in self.protocol.fields:
+                        if field_def.name == self.protocol.length_field_name:
+                            length_field = field_def
+                            break
+                        length_offset += field_def.byte_count
+                    
+                    if length_field:
+                        # 读取长度字段的值
+                        field_start = header_pos + length_offset
+                        field_end = field_start + length_field.byte_count
+                        
+                        if field_end <= len(data):
+                            length_data = data[field_start:field_end]
+                            # 根据字段类型解析长度值
+                            if length_field.field_type == FieldType.UINT8:
+                                frame_length = length_data[0] if len(length_data) >= 1 else 0
+                            elif length_field.field_type == FieldType.UINT16:
+                                frame_length = struct.unpack('<H', length_data[:2])[0] if len(length_data) >= 2 else 0
+                            else:
+                                frame_length = int.from_bytes(length_data, byteorder='little')
+                            
+                            if frame_length > 0:
+                                frame_end = header_pos + frame_length
+                                if frame_end > len(data):
+                                    # 数据不足
+                                    break
+                except Exception:
+                    # 长度字段解析失败，回退到帧尾查找
+                    pass
             
-            # 记录帧的位置（包括帧头和帧尾）
-            frame_end = tail_pos + len(tail)
-            frames.append((header_pos, frame_end))
+            # 策略3: 传统的帧尾查找（如果前两种策略都未成功）
+            if frame_end is None:
+                search_start = header_pos + header_len
+                tail_pos = data.find(tail, search_start)
+                
+                if tail_pos == -1:
+                    # 没有找到帧尾，可能是不完整的帧
+                    break
+                
+                frame_end = tail_pos + tail_len
             
-            # 继续从当前帧尾后搜索
-            pos = frame_end
+            # 验证帧的完整性（如果有帧尾，检查帧尾是否正确）
+            if frame_end > header_pos:
+                # 检查帧尾位置是否有正确的帧尾标识
+                expected_tail_pos = frame_end - tail_len
+                if expected_tail_pos >= 0 and expected_tail_pos + tail_len <= len(data):
+                    actual_tail = data[expected_tail_pos:expected_tail_pos + tail_len]
+                    if actual_tail == tail:
+                        # 帧尾正确，记录这一帧
+                        frames.append((header_pos, frame_end))
+                        pos = frame_end
+                    else:
+                        # 帧尾不匹配，可能是数据中的伪帧头，继续查找
+                        pos = header_pos + 1
+                else:
+                    frames.append((header_pos, frame_end))
+                    pos = frame_end
+            else:
+                # 异常情况，跳过这个帧头
+                pos = header_pos + 1
         
         return frames
     
@@ -253,10 +322,7 @@ class DataParser:
             if self.protocol.checksum_config.checksum_type != ChecksumType.NONE:
                 is_valid, expected, actual = ChecksumValidator.validate_frame(
                     frame_data,
-                    self.protocol.checksum_config.checksum_type,
-                    self.protocol.checksum_config.start_offset,
-                    self.protocol.checksum_config.end_offset,
-                    self.protocol.checksum_config.checksum_length
+                    self.protocol.checksum_config
                 )
                 frame.set_checksum_result(is_valid, expected, actual)
         

@@ -40,13 +40,19 @@ class FieldType(Enum):
 
 @dataclass
 class ChecksumConfig:
-    """校验配置"""
+    """校验配置（简化版）"""
     checksum_type: ChecksumType = ChecksumType.NONE
     position: ChecksumPosition = ChecksumPosition.BEFORE_TAIL
-    # 自定义校验范围（如果position是CUSTOM）
+    
+    # 简化配置：直接指定绝对位置
+    checksum_position: Optional[int] = None  # 校验码在整帧中的位置（从0开始的索引）
+    checksum_length: int = 1  # 校验码字节数
+    checksum_start: Optional[int] = None  # 校验计算起始位置（从0开始），None表示从帧头开始
+    checksum_end: Optional[int] = None    # 校验计算结束位置（不包含），None表示到校验码前
+    
+    # 旧版兼容字段（如果新字段为None则使用这些）
     start_offset: int = 0  # 从帧头后第几个字节开始（0表示紧跟帧头）
     end_offset: int = -1   # 到帧尾前第几个字节结束（-1表示到校验码前）
-    checksum_length: int = 1  # 校验码字节数
     
     def __post_init__(self):
         """数据验证"""
@@ -100,6 +106,10 @@ class ProtocolConfig:
     # 帧标识
     frame_header: str = "68"  # 十六进制字符串
     frame_tail: str = "16"    # 十六进制字符串
+    
+    # 帧长度配置（可选）
+    frame_length: Optional[int] = None  # 固定帧长度（字节数），包括帧头帧尾。如果指定，将优先使用此长度而非查找帧尾
+    length_field_name: Optional[str] = None  # 长度字段名称（如"整包长度"），用于从数据中读取帧长度
     
     # 校验配置
     checksum_config: ChecksumConfig = field(default_factory=ChecksumConfig)
@@ -173,16 +183,56 @@ class ProtocolConfig:
             'fields': [f.to_dict() for f in self.fields]
         }
     
+    @staticmethod
+    def _convert_checksum_type(checksum_type_str: str) -> ChecksumType:
+        """转换校验类型字符串为枚举（支持多种格式）"""
+        # 转换为大写进行匹配
+        type_upper = checksum_type_str.upper()
+        
+        # 映射表（只包含实际存在的枚举值）
+        type_mapping = {
+            'SUM': ChecksumType.SUM,
+            '累加和': ChecksumType.SUM,
+            'XOR': ChecksumType.XOR,
+            '异或': ChecksumType.XOR,
+            '异或校验': ChecksumType.XOR,
+            'CRC16': ChecksumType.CRC16,
+            'CRC32': ChecksumType.CRC32,
+            'NONE': ChecksumType.NONE,
+            '无校验': ChecksumType.NONE,
+            '无': ChecksumType.NONE
+        }
+        
+        # 查找匹配
+        for key, value in type_mapping.items():
+            if type_upper == key.upper() or checksum_type_str == key:
+                return value
+        
+        # 如果都不匹配，尝试直接创建枚举
+        try:
+            return ChecksumType(checksum_type_str)
+        except ValueError:
+            # 默认返回无校验
+            return ChecksumType.NONE
+    
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'ProtocolConfig':
         """从字典创建（用于JSON加载）"""
         checksum_data = data.get('checksum_config', {})
+        
+        # 转换校验类型（支持多种格式）
+        checksum_type_str = checksum_data.get('checksum_type', '无校验')
+        checksum_type = cls._convert_checksum_type(checksum_type_str)
+        
         checksum_config = ChecksumConfig(
-            checksum_type=ChecksumType(checksum_data.get('checksum_type', '无校验')),
+            checksum_type=checksum_type,
             position=ChecksumPosition(checksum_data.get('position', '帧尾前')),
-            start_offset=checksum_data.get('start_offset', 0),
-            end_offset=checksum_data.get('end_offset', -1),
-            checksum_length=checksum_data.get('checksum_length', 1)
+            checksum_position=checksum_data.get('checksum_position'),  # 新字段：校验码绝对位置
+            checksum_length=checksum_data.get('checksum_length', 1),
+            checksum_start=checksum_data.get('checksum_start'),  # 新字段：校验计算起始位置
+            checksum_end=checksum_data.get('checksum_end'),      # 新字段：校验计算结束位置
+            start_offset=checksum_data.get('start_offset', 0),   # 旧版兼容
+            end_offset=checksum_data.get('end_offset', -1)       # 旧版兼容
         )
         
         fields = [FieldDefinition.from_dict(f) for f in data.get('fields', [])]
@@ -193,6 +243,8 @@ class ProtocolConfig:
             description=data.get('description', ''),
             frame_header=data['frame_header'],
             frame_tail=data['frame_tail'],
+            frame_length=data.get('frame_length'),  # 可选的固定帧长度
+            length_field_name=data.get('length_field_name'),  # 可选的长度字段名称
             checksum_config=checksum_config,
             fields=fields
         )

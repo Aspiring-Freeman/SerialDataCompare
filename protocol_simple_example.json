@@ -1,0 +1,41 @@
+{
+  "protocol_name": "简单协议示例",
+  "version": "1.0",
+  "description": "展示简化配置的示例",
+  "frame_header": "AA",
+  "frame_tail": "55",
+  "frame_length": 10,
+  "checksum_config": {
+    "checksum_type": "sum",
+    "checksum_position": 8,
+    "checksum_length": 1,
+    "checksum_start": 0,
+    "checksum_end": 8
+  },
+  "fields": [
+    {
+      "name": "设备地址",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "设备地址"
+    },
+    {
+      "name": "功能码",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "功能码"
+    },
+    {
+      "name": "数据长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "数据字段长度"
+    },
+    {
+      "name": "数据",
+      "byte_count": 4,
+      "field_type": "bytes",
+      "description": "数据内容"
+    }
+  ]
+}

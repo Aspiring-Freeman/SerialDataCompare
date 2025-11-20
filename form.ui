@@ -315,13 +315,60 @@
             </layout>
            </item>
            <item row="2" column="0">
+            <widget class="QLabel" name="label_frame_length">
+             <property name="text">
+              <string>固定帧长度：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout_frame_length">
+             <item>
+              <widget class="QSpinBox" name="spinBox_frame_length">
+               <property name="toolTip">
+                <string>整个数据帧的固定长度（包括帧头和帧尾），0表示不使用固定长度</string>
+               </property>
+               <property name="minimum">
+                <number>0</number>
+               </property>
+               <property name="maximum">
+                <number>9999</number>
+               </property>
+               <property name="value">
+                <number>0</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_frame_length_hint">
+               <property name="text">
+                <string>字节（0=不使用）</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_frame_length">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item row="3" column="0">
             <widget class="QLabel" name="label_checksum_type">
              <property name="text">
               <string>校验方式：</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
+           <item row="3" column="1">
             <widget class="QComboBox" name="comboBox_checksum_type">
              <item>
               <property name="text">
@@ -350,14 +397,116 @@
              </item>
             </widget>
            </item>
-           <item row="3" column="0">
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_checksum_position_abs">
+             <property name="text">
+              <string>简化配置：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <layout class="QVBoxLayout" name="verticalLayout_checksum_abs">
+             <item>
+              <widget class="QCheckBox" name="checkBox_use_absolute_position">
+               <property name="text">
+                <string>使用绝对位置</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_checksum_absolute_pos">
+               <item>
+                <widget class="QLabel" name="label_checksum_abs_pos">
+                 <property name="text">
+                  <string>校验码位置：</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="spinBox_checksum_position">
+                 <property name="toolTip">
+                  <string>校验码在帧中的绝对位置（从0开始的索引）</string>
+                 </property>
+                 <property name="minimum">
+                  <number>0</number>
+                 </property>
+                 <property name="maximum">
+                  <number>9999</number>
+                 </property>
+                 <property name="value">
+                  <number>104</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_checksum_abs_hint">
+                 <property name="text">
+                  <string>（从0开始的索引）</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_checksum_calc_range">
+               <item>
+                <widget class="QLabel" name="label_checksum_calc_from">
+                 <property name="text">
+                  <string>校验计算范围：从：</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="spinBox_checksum_start">
+                 <property name="toolTip">
+                  <string>校验计算的起始位置（绝对索引）</string>
+                 </property>
+                 <property name="minimum">
+                  <number>0</number>
+                 </property>
+                 <property name="maximum">
+                  <number>9999</number>
+                 </property>
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_checksum_calc_to">
+                 <property name="text">
+                  <string>到：</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="spinBox_checksum_end">
+                 <property name="toolTip">
+                  <string>校验计算的结束位置（绝对索引）</string>
+                 </property>
+                 <property name="minimum">
+                  <number>0</number>
+                 </property>
+                 <property name="maximum">
+                  <number>9999</number>
+                 </property>
+                 <property name="value">
+                  <number>104</number>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </item>
+           <item row="7" column="0">
             <widget class="QLabel" name="label_checksum_position">
              <property name="text">
               <string>校验码位置：</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
+           <item row="7" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_checksum_pos">
              <item>
               <widget class="QRadioButton" name="radioButton_checksum_before_tail">
