@@ -111,7 +111,7 @@ class ChecksumValidator:
             checksum_config: ChecksumConfig对象
             
         Returns:
-            (是否通过, 期望校验值, 实际校验值)
+            (是否通过, 计算校验值, 帧内校验值)
         """
         checksum_type = checksum_config.checksum_type
         
@@ -163,13 +163,17 @@ class ChecksumValidator:
             else:
                 # 使用旧版offset配置（兼容模式）
                 if checksum_config.start_offset == -1:
+                    # -1表示从帧头开始(包含帧头)
                     data_start = 0
                 else:
+                    # 从帧头后开始(不包含帧头)
                     data_start = 1 + checksum_config.start_offset
                 
                 if checksum_config.end_offset == 0:
+                    # 到校验码前
                     data_end = checksum_start
                 elif checksum_config.end_offset == -1:
+                    # 到帧尾前
                     data_end = len(frame_data) - 1
                 elif checksum_config.end_offset < 0:
                     data_end = len(frame_data) + checksum_config.end_offset + 1
@@ -182,21 +186,21 @@ class ChecksumValidator:
             # 提取要校验的数据
             data_to_check = frame_data[data_start:data_end]
             
-            # 计算期望的校验值
-            expected_checksum = ChecksumCalculator.calculate(data_to_check, checksum_type)
+            # 计算校验值
+            calculated_checksum = ChecksumCalculator.calculate(data_to_check, checksum_type)
             
             # 根据校验类型截取相应位数
             if checksum_type == ChecksumType.CRC16:
-                expected_checksum &= 0xFFFF
+                calculated_checksum &= 0xFFFF
             elif checksum_type == ChecksumType.CRC32:
-                expected_checksum &= 0xFFFFFFFF
+                calculated_checksum &= 0xFFFFFFFF
             else:
-                expected_checksum &= 0xFF
+                calculated_checksum &= 0xFF
             
             # 比较
-            is_valid = (expected_checksum == actual_checksum)
+            is_valid = (calculated_checksum == actual_checksum)
             
-            return is_valid, expected_checksum, actual_checksum
+            return is_valid, calculated_checksum, actual_checksum
             
         except Exception as e:
             print(f"校验验证出错: {e}")

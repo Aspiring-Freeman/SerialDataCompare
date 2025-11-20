@@ -111,13 +111,21 @@ class DataParser:
                         
                         if field_end <= len(data):
                             length_data = data[field_start:field_end]
+                            # 确定字节序
+                            from models import Endianness
+                            endian_prefix = '>' if (hasattr(length_field, 'endianness') and 
+                                                    length_field.endianness == Endianness.BIG) else '<'
+                            
                             # 根据字段类型解析长度值
                             if length_field.field_type == FieldType.UINT8:
                                 frame_length = length_data[0] if len(length_data) >= 1 else 0
                             elif length_field.field_type == FieldType.UINT16:
-                                frame_length = struct.unpack('<H', length_data[:2])[0] if len(length_data) >= 2 else 0
+                                frame_length = struct.unpack(f'{endian_prefix}H', length_data[:2])[0] if len(length_data) >= 2 else 0
+                            elif length_field.field_type == FieldType.UINT32:
+                                frame_length = struct.unpack(f'{endian_prefix}I', length_data[:4])[0] if len(length_data) >= 4 else 0
                             else:
-                                frame_length = int.from_bytes(length_data, byteorder='little')
+                                byteorder = 'big' if endian_prefix == '>' else 'little'
+                                frame_length = int.from_bytes(length_data, byteorder=byteorder)
                             
                             if frame_length > 0:
                                 frame_end = header_pos + frame_length
@@ -175,18 +183,23 @@ class DataParser:
         """
         field_type = field_def.field_type
         
+        # 确定字节序前缀
+        from models import Endianness
+        endian_prefix = '>' if (hasattr(field_def, 'endianness') and 
+                                field_def.endianness == Endianness.BIG) else '<'
+        
         try:
             if field_type == FieldType.UINT8:
                 return data[0] if len(data) >= 1 else 0
             
             elif field_type == FieldType.UINT16:
                 if len(data) >= 2:
-                    return struct.unpack('<H', data[:2])[0]  # 小端序
+                    return struct.unpack(f'{endian_prefix}H', data[:2])[0]
                 return 0
             
             elif field_type == FieldType.UINT32:
                 if len(data) >= 4:
-                    return struct.unpack('<I', data[:4])[0]
+                    return struct.unpack(f'{endian_prefix}I', data[:4])[0]
                 return 0
             
             elif field_type == FieldType.INT8:
@@ -196,22 +209,22 @@ class DataParser:
             
             elif field_type == FieldType.INT16:
                 if len(data) >= 2:
-                    return struct.unpack('<h', data[:2])[0]
+                    return struct.unpack(f'{endian_prefix}h', data[:2])[0]
                 return 0
             
             elif field_type == FieldType.INT32:
                 if len(data) >= 4:
-                    return struct.unpack('<i', data[:4])[0]
+                    return struct.unpack(f'{endian_prefix}i', data[:4])[0]
                 return 0
             
             elif field_type == FieldType.FLOAT:
                 if len(data) >= 4:
-                    return struct.unpack('<f', data[:4])[0]
+                    return struct.unpack(f'{endian_prefix}f', data[:4])[0]
                 return 0.0
             
             elif field_type == FieldType.DOUBLE:
                 if len(data) >= 8:
-                    return struct.unpack('<d', data[:8])[0]
+                    return struct.unpack(f'{endian_prefix}d', data[:8])[0]
                 return 0.0
             
             elif field_type == FieldType.BYTES:
@@ -342,6 +355,7 @@ class DataParser:
             解析结果
         """
         result = ParseResult()
+        result.input_data = hex_string  # 保存输入数据用于历史记录
         
         try:
             # 转换为字节数据

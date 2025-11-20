@@ -9,7 +9,8 @@ from .protocol import (
     ChecksumConfig,
     ChecksumType,
     ChecksumPosition,
-    FieldType
+    FieldType,
+    Endianness
 )
 from .data_frame import DataFrame, ParseResult
 
@@ -20,6 +21,7 @@ __all__ = [
     'ChecksumType',
     'ChecksumPosition',
     'FieldType',
+    'Endianness',
     'DataFrame',
     'ParseResult'
 ]

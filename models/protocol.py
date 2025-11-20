@@ -38,6 +38,12 @@ class FieldType(Enum):
     STRING = "string"
 
 
+class Endianness(Enum):
+    """字节序枚举"""
+    BIG = "big"      # 大端（网络字节序）
+    LITTLE = "little"  # 小端（x86字节序）
+
+
 @dataclass
 class ChecksumConfig:
     """校验配置（简化版）"""
@@ -70,10 +76,20 @@ class FieldDefinition:
     order: int = 0
     # 如果是变长字段，指定长度字段的名称
     length_field: Optional[str] = None
+    # 字节序（仅对多字节类型有效）
+    endianness: Endianness = Endianness.BIG
+    
+    def is_multi_byte_type(self) -> bool:
+        """判断是否为多字节类型"""
+        return self.field_type in [
+            FieldType.UINT16, FieldType.UINT32,
+            FieldType.INT16, FieldType.INT32,
+            FieldType.FLOAT, FieldType.DOUBLE
+        ]
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
-        return {
+        result = {
             'name': self.name,
             'byte_count': self.byte_count,
             'field_type': self.field_type.value,
@@ -81,18 +97,28 @@ class FieldDefinition:
             'order': self.order,
             'length_field': self.length_field
         }
+        # 只有多字节类型才保存字节序
+        if self.is_multi_byte_type():
+            result['endianness'] = self.endianness.value
+        return result
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'FieldDefinition':
         """从字典创建"""
         field_type = FieldType(data.get('field_type', 'bytes'))
+        # 解析字节序，默认为大端
+        endianness = Endianness.BIG
+        if 'endianness' in data:
+            endianness = Endianness(data['endianness'])
+        
         return cls(
             name=data['name'],
             byte_count=data['byte_count'],
             field_type=field_type,
             description=data.get('description', ''),
             order=data.get('order', 0),
-            length_field=data.get('length_field')
+            length_field=data.get('length_field'),
+            endianness=endianness
         )
 
 
@@ -102,6 +128,7 @@ class ProtocolConfig:
     protocol_name: str = "默认协议"
     version: str = "1.0"
     description: str = ""
+    file_path: Optional[str] = None  # 协议文件路径（用于历史记录）
     
     # 帧标识
     frame_header: str = "68"  # 十六进制字符串

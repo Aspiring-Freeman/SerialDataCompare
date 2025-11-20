@@ -112,8 +112,8 @@ class DataFrame:
         lines.append("  校验信息")
         lines.append("-" * 80)
         if self.expected_checksum is not None and self.actual_checksum is not None:
-            lines.append(f"  期望校验码: 0x{self.expected_checksum:02X}")
-            lines.append(f"  实际校验码: 0x{self.actual_checksum:02X}")
+            lines.append(f"  计算校验码: 0x{self.expected_checksum:02X}")
+            lines.append(f"  帧内校验码: 0x{self.actual_checksum:02X}")
             if self.checksum_valid:
                 lines.append(f"  校验状态: ✓ 通过")
             else:
@@ -178,8 +178,8 @@ class DataFrame:
         
         html_parts.append("<div class='section'><b>校验信息:</b></div>")
         if self.expected_checksum is not None and self.actual_checksum is not None:
-            html_parts.append(f"<div>期望校验码: 0x{self.expected_checksum:02X}</div>")
-            html_parts.append(f"<div>实际校验码: 0x{self.actual_checksum:02X}</div>")
+            html_parts.append(f"<div>计算校验码: 0x{self.expected_checksum:02X}</div>")
+            html_parts.append(f"<div>帧内校验码: 0x{self.actual_checksum:02X}</div>")
             if self.checksum_valid:
                 html_parts.append("<div class='success'>校验状态: ✓ 通过</div>")
             else:
@@ -201,6 +201,7 @@ class ParseResult:
     """解析结果"""
     frames: list[DataFrame] = field(default_factory=list)
     total_bytes: int = 0
+    input_data: str = ""  # 输入的原始数据（用于历史记录）
     
     def add_frame(self, frame: DataFrame):
         """添加数据帧"""

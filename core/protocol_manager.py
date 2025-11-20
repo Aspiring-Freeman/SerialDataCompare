@@ -56,6 +56,11 @@ class ProtocolManager:
             
             # 使用转换器自动检测并转换格式
             protocol = ProtocolConverter.validate_and_convert(data)
+            
+            # 设置文件路径（用于历史记录）
+            if protocol:
+                protocol.file_path = os.path.abspath(file_path)
+            
             return protocol
         except Exception as e:
             print(f"加载协议失败: {e}")
