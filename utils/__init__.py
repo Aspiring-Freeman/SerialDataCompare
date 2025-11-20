@@ -10,11 +10,14 @@ from .helpers import (
     bytes_to_int,
     int_to_bytes
 )
+from .logger import Logger, LogLevel
 
 __all__ = [
     'export_to_txt',
     'export_to_csv',
     'format_hex',
     'bytes_to_int',
-    'int_to_bytes'
+    'int_to_bytes',
+    'Logger',
+    'LogLevel'
 ]

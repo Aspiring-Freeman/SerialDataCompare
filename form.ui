@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
-    <height>800</height>
+    <width>1600</width>
+    <height>1000</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -197,6 +197,12 @@
              <property name="sortingEnabled">
               <bool>false</bool>
              </property>
+             <property name="horizontalScrollMode">
+              <enum>QAbstractItemView::ScrollMode::ScrollPerPixel</enum>
+             </property>
+             <attribute name="horizontalHeaderStretchLastSection">
+              <bool>true</bool>
+             </attribute>
              <column>
               <property name="text">
                <string>帧序号</string>
@@ -229,26 +235,24 @@
              </column>
             </widget>
            </item>
-           <item>
-            <widget class="QGroupBox" name="groupBox_frame_detail">
-             <property name="title">
-              <string>帧详情</string>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_frame_detail">
-              <item>
-               <widget class="QTextEdit" name="textEdit_frame_detail">
-                <property name="readOnly">
-                 <bool>true</bool>
-                </property>
-                <property name="placeholderText">
-                 <string>点击表格中的某一帧，这里将显示该帧的详细解析信息</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
           </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_frame_detail">
+       <attribute name="title">
+        <string>帧详情</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_frame_detail_tab">
+        <item>
+         <widget class="QTextEdit" name="textEdit_frame_detail">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+          <property name="placeholderText">
+           <string>点击表格中的某一帧，这里将显示该帧的详细解析信息</string>
+          </property>
          </widget>
         </item>
        </layout>
@@ -860,14 +864,31 @@
             <widget class="QComboBox" name="comboBox_theme">
              <item>
               <property name="text">
-               <string>浅色主题</string>
+               <string>Fusion - 浅色</string>
               </property>
              </item>
              <item>
               <property name="text">
-               <string>深色主题</string>
+               <string>Fusion - 深色</string>
               </property>
              </item>
+             <item>
+              <property name="text">
+               <string>Windows</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>系统默认</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QPushButton" name="btn_apply_theme">
+             <property name="text">
+              <string>应用主题</string>
+             </property>
             </widget>
            </item>
           </layout>
@@ -976,6 +997,90 @@
            </size>
           </property>
          </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_log">
+       <attribute name="title">
+        <string>日志</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_log">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_log_controls">
+          <item>
+           <widget class="QLabel" name="label_log_level">
+            <property name="text">
+             <string>日志级别：</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBox_log_level">
+            <item>
+             <property name="text">
+              <string>全部</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>DEBUG</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>INFO</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>WARNING</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>ERROR</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_log">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_clear_log">
+            <property name="text">
+             <string>清空日志</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_export_log">
+            <property name="text">
+             <string>导出日志</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QTextEdit" name="textEdit_log">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+          <property name="placeholderText">
+           <string>这里将显示程序运行的详细日志信息...</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>

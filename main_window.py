@@ -4,6 +4,7 @@
 """
 import sys
 import os
+from datetime import datetime
 from typing import Optional
 
 from PySide6.QtWidgets import (
@@ -21,7 +22,7 @@ from models import (
 from core import DataParser, ProtocolManager, ColorConfig
 from core.protocol_history import ProtocolHistory
 from core.analysis_history import AnalysisHistory
-from utils import export_to_txt, export_to_csv
+from utils import export_to_txt, export_to_csv, Logger, LogLevel
 from utils.delegates import ComboBoxDelegate
 from ui import HistoryDialog
 
@@ -64,19 +65,106 @@ class Main(QMainWindow):
         self.color_config = ColorConfig()
         # 颜色选择器字典
         self.color_buttons = {}
+        # 日志管理器
+        self.logger = Logger()
         
         # 初始化
         self.init_protocol()
         self.setup_connections()
         self.setup_checksum_ui_logic()  # 设置校验UI逻辑
+        self.setup_table_columns()  # 设置表格列宽
+        self.setup_logger()  # 设置日志
         self.update_ui_from_protocol()
         self.setup_history_menu()
         self.setup_color_config_ui()
+        
+        # 记录启动日志
+        self.logger.info("程序启动成功")
     
     def setup_checksum_ui_logic(self):
         """设置校验配置UI逻辑"""
         # 连接复选框信号，控制简化配置的启用/禁用
         self.ui.checkBox_use_absolute_position.stateChanged.connect(self.on_absolute_position_changed)
+    
+    def setup_table_columns(self):
+        """设置表格列宽"""
+        from PySide6.QtWidgets import QHeaderView
+        
+        header = self.ui.tableWidget_frames.horizontalHeader()
+        # 帧序号 - 固定宽度
+        header.resizeSection(0, 80)
+        # 起始位置 - 固定宽度
+        header.resizeSection(1, 90)
+        # 结束位置 - 固定宽度
+        header.resizeSection(2, 90)
+        # 原始数据 - 自适应内容，但允许拉伸
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
+        # 解析结果 - 自适应内容，但允许拉伸
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
+        # 校验状态 - 固定宽度
+        header.resizeSection(5, 100)
+        
+        # 设置最小列宽，避免数据被截断
+        self.ui.tableWidget_frames.setColumnWidth(3, 400)  # 原始数据最小宽度
+        self.ui.tableWidget_frames.setColumnWidth(4, 300)  # 解析结果最小宽度
+    
+    def setup_logger(self):
+        """设置日志系统"""
+        # 连接日志信号到 UI
+        self.logger.log_added.connect(self.on_log_added)
+        
+        # 连接日志控制按钮
+        self.ui.btn_clear_log.clicked.connect(self.on_clear_log)
+        self.ui.btn_export_log.clicked.connect(self.on_export_log)
+        self.ui.comboBox_log_level.currentTextChanged.connect(self.on_log_level_changed)
+    
+    def on_log_added(self, level: str, message: str):
+        """新日志添加时的处理"""
+        # 获取当前选择的日志级别过滤
+        current_filter = self.ui.comboBox_log_level.currentText()
+        
+        # 如果是"全部"或匹配当前级别，则显示
+        if current_filter == "全部" or current_filter == level:
+            self.ui.textEdit_log.append(message)
+    
+    def on_clear_log(self):
+        """清空日志"""
+        self.ui.textEdit_log.clear()
+        self.logger.clear()
+    
+    def on_export_log(self):
+        """导出日志"""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "导出日志",
+            f"log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            "文本文件 (*.txt)"
+        )
+        
+        if file_path:
+            try:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(self.logger.export_to_text())
+                self.logger.info(f"日志已导出到：{file_path}")
+                QMessageBox.information(self, "成功", "日志导出成功！")
+            except Exception as e:
+                self.logger.error(f"导出日志失败：{str(e)}")
+                QMessageBox.critical(self, "错误", f"导出日志失败：{str(e)}")
+    
+    def on_log_level_changed(self, level: str):
+        """日志级别过滤改变"""
+        self.ui.textEdit_log.clear()
+        
+        if level == "全部":
+            logs = self.logger.get_logs()
+        else:
+            level_enum = LogLevel[level]
+            logs = self.logger.get_logs(level_enum)
+        
+        for log in logs:
+            self.ui.textEdit_log.append(log)
+        
+        self.logger.debug(f"日志过滤级别已更改为：{level}")
     
     def on_absolute_position_changed(self, state):
         """简化配置复选框状态改变"""
@@ -91,14 +179,18 @@ class Main(QMainWindow):
         
     def init_protocol(self):
         """初始化协议配置"""
+        self.logger.debug("正在初始化协议配置...")
+        
         # 尝试加载示例协议
         example_path = os.path.join(os.path.dirname(__file__), 'protocol_example.json')
         if os.path.exists(example_path):
             self.current_protocol = ProtocolManager.load_protocol(example_path)
+            self.logger.info(f"已加载示例协议：{example_path}")
         
         # 如果加载失败，使用默认协议
         if self.current_protocol is None:
             self.current_protocol = ProtocolManager.get_default_protocol()
+            self.logger.info("已加载默认协议配置")
     
     def setup_history_menu(self):
         """设置历史记录菜单"""
@@ -148,6 +240,9 @@ class Main(QMainWindow):
         self.ui.btn_reset_protocol.clicked.connect(self.on_reset_protocol_clicked)
         
         # 设置Tab
+        self.ui.btn_apply_theme.clicked.connect(self.on_apply_theme_clicked)
+        
+        # 设置Tab
         self.ui.spinBox_font_size.valueChanged.connect(self.on_font_size_changed)
         self.ui.btn_reset_colors.clicked.connect(self.on_reset_colors_clicked)
     
@@ -182,11 +277,16 @@ class Main(QMainWindow):
     
     def on_analyze_clicked(self):
         """分析按钮点击"""
+        self.logger.info("========== 开始分析数据 ==========")
+        
         # 获取输入数据
         input_text = self.ui.textEdit_input.toPlainText().strip()
         if not input_text:
+            self.logger.warning("输入数据为空")
             QMessageBox.warning(self, "警告", "请先输入数据！")
             return
+        
+        self.logger.info(f"输入数据长度：{len(input_text)} 字符")
         
         # 清空之前的分析结果
         self.ui.textEdit_frame_detail.clear()
@@ -195,12 +295,16 @@ class Main(QMainWindow):
         
         # 从UI更新协议配置
         self.update_protocol_from_ui()
+        self.logger.debug(f"协议配置：{self.current_protocol.protocol_name}")
         
         # 验证协议
         is_valid, error_msg = ProtocolManager.validate_protocol(self.current_protocol)
         if not is_valid:
+            self.logger.error(f"协议配置无效：{error_msg}")
             QMessageBox.critical(self, "协议错误", f"协议配置无效：\n{error_msg}")
             return
+        
+        self.logger.info("协议配置验证通过")
         
         # 禁用按钮
         self.ui.btn_analyze.setEnabled(False)
@@ -219,6 +323,8 @@ class Main(QMainWindow):
         """解析完成"""
         self.parse_result = result
         
+        self.logger.info(f"解析完成！总帧数：{result.get_total_frames()}，有效帧：{result.get_valid_frames()}，错误帧：{result.get_error_frames()}")
+        
         # 更新统计信息
         self.ui.label_total_frames.setText(f"总帧数：{result.get_total_frames()}")
         self.ui.label_valid_frames.setText(f"有效帧：{result.get_valid_frames()}")
@@ -226,9 +332,11 @@ class Main(QMainWindow):
         
         # 填充表格
         self.fill_frames_table(result)
+        self.logger.debug("帧数据表格已填充")
         
         # 保存到历史记录
         self.save_analysis_to_history(result)
+        self.logger.debug("分析结果已保存到历史记录")
         
         # 恢复按钮
         self.ui.btn_analyze.setEnabled(True)
@@ -236,9 +344,11 @@ class Main(QMainWindow):
         
         # 显示完成消息
         self.statusBar().showMessage(f"分析完成！{result.get_summary()}", 5000)
+        self.logger.info("========== 分析完成 ==========")
     
     def on_parse_error(self, error_msg: str):
         """解析错误"""
+        self.logger.error(f"解析失败：{error_msg}")
         QMessageBox.critical(self, "解析错误", f"解析失败：\n{error_msg}")
         
         # 恢复按钮
@@ -299,6 +409,8 @@ class Main(QMainWindow):
             frame = self.parse_result.frames[row]
             # 使用HTML版本显示，带颜色
             self.ui.textEdit_frame_detail.setHtml(frame.get_detailed_info_html(self.color_config))
+            # 自动切换到帧详情标签页（索引1，在数据分析之后）
+            self.ui.tabWidget.setCurrentIndex(1)
     
     def save_analysis_to_history(self, result: ParseResult):
         """保存分析结果到历史记录"""
@@ -651,6 +763,8 @@ class Main(QMainWindow):
     
     def on_save_protocol_clicked(self):
         """保存协议"""
+        self.logger.info("开始保存协议配置...")
+        
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "保存协议配置",
@@ -659,18 +773,23 @@ class Main(QMainWindow):
         )
         
         if not file_path:
+            self.logger.debug("用户取消了保存操作")
             return
         
         # 从UI更新协议
         self.update_protocol_from_ui()
         
         if ProtocolManager.save_protocol(self.current_protocol, file_path):
+            self.logger.info(f"协议保存成功：{file_path}")
             QMessageBox.information(self, "成功", "协议保存成功！")
         else:
+            self.logger.error(f"协议保存失败：{file_path}")
             QMessageBox.critical(self, "失败", "协议保存失败！")
     
     def on_load_protocol_clicked(self):
         """加载协议"""
+        self.logger.info("开始加载协议配置...")
+        
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "加载协议配置",
@@ -679,6 +798,7 @@ class Main(QMainWindow):
         )
         
         if not file_path:
+            self.logger.debug("用户取消了加载操作")
             return
         
         self.load_protocol_from_path(file_path)
@@ -690,15 +810,21 @@ class Main(QMainWindow):
         Args:
             file_path: 协议文件路径
         """
+        self.logger.info(f"正在加载协议文件：{file_path}")
+        
         protocol = ProtocolManager.load_protocol(file_path)
         if protocol:
             self.current_protocol = protocol
+            self.logger.info(f"协议加载成功：{protocol.protocol_name}")
+            self.logger.debug(f"协议详情：帧头={protocol.frame_header}, 帧尾={protocol.frame_tail}, 字段数={len(protocol.fields)}")
+            
             self.update_ui_from_protocol()
             # 添加到历史记录
             self.protocol_history.add_protocol(file_path, protocol.protocol_name)
             self.update_history_menu()
             QMessageBox.information(self, "成功", "协议加载成功！")
         else:
+            self.logger.error(f"协议加载失败：{file_path}")
             QMessageBox.critical(self, "失败", "协议加载失败！请检查文件格式。")
     
     def clear_protocol_history(self):
@@ -761,10 +887,102 @@ class Main(QMainWindow):
                 color = self.color_config.get_color(field_type)
                 btn.setStyleSheet(f"background-color: {color};")
             QMessageBox.information(self, "成功", "颜色配置已恢复默认值！")
+    
+    def on_apply_theme_clicked(self):
+        """应用主题"""
+        theme_name = self.ui.comboBox_theme.currentText()
+        self.logger.info(f"正在切换主题：{theme_name}")
+        
+        try:
+            self.apply_theme(theme_name)
+            self.logger.info(f"主题切换成功：{theme_name}")
+            QMessageBox.information(self, "成功", f"主题已切换为：{theme_name}")
+        except Exception as e:
+            self.logger.error(f"主题切换失败：{str(e)}")
+            QMessageBox.warning(self, "警告", f"主题切换失败：{str(e)}")
+    
+    def apply_theme(self, theme_name: str):
+        """
+        应用主题
+        
+        Args:
+            theme_name: 主题名称
+        """
+        from PySide6.QtGui import QPalette, QColor
+        
+        app = QApplication.instance()
+        
+        if theme_name == "Fusion - 浅色":
+            app.setStyle("Fusion")
+            # 浅色调色板
+            palette = QPalette()
+            palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
+            palette.setColor(QPalette.ColorRole.WindowText, QColor(0, 0, 0))
+            palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+            palette.setColor(QPalette.ColorRole.AlternateBase, QColor(245, 245, 245))
+            palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 220))
+            palette.setColor(QPalette.ColorRole.ToolTipText, QColor(0, 0, 0))
+            palette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
+            palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+            palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
+            palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+            palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+            palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+            palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+            app.setPalette(palette)
+            
+        elif theme_name == "Fusion - 深色":
+            app.setStyle("Fusion")
+            # 深色调色板
+            palette = QPalette()
+            palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+            palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
+            palette.setColor(QPalette.ColorRole.Base, QColor(25, 25, 25))
+            palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+            palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+            palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
+            palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
+            palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+            palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
+            palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+            palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+            palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+            palette.setColor(QPalette.ColorRole.HighlightedText, QColor(0, 0, 0))
+            # 禁用状态的颜色
+            palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(127, 127, 127))
+            palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(127, 127, 127))
+            palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(127, 127, 127))
+            app.setPalette(palette)
+            
+        elif theme_name == "Windows":
+            app.setStyle("Windows")
+            app.setPalette(app.style().standardPalette())
+            
+        elif theme_name == "系统默认":
+            app.setStyle("")  # 空字符串使用系统默认
+            app.setPalette(app.style().standardPalette())
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    
+    # 使用 Qt Fusion 主题（跨平台一致的现代外观）
+    app.setStyle("Fusion")
+    
+    # 设置调色板以获得更好的视觉效果
+    from PySide6.QtGui import QPalette
+    palette = QPalette()
+    
+    # 可选：设置浅色主题（注释掉则使用系统默认）
+    # palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
+    # palette.setColor(QPalette.ColorRole.WindowText, QColor(0, 0, 0))
+    # palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+    # palette.setColor(QPalette.ColorRole.AlternateBase, QColor(245, 245, 245))
+    # palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+    # palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+    # palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+    # app.setPalette(palette)
+    
     widget = Main()
     widget.show()
     sys.exit(app.exec())
