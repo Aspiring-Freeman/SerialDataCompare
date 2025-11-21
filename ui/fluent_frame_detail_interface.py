@@ -265,10 +265,12 @@ class FrameDetailInterface(QWidget):
         
         # 更新基本信息
         self.frame_num_value.setText(f"#{frame.frame_number}")
-        data_length = frame.end_position - frame.start_position + 1
+        # 使用实际数据长度，避免计算偏差
+        data_length = len(frame.raw_data)
         self.length_value.setText(f"{data_length} 字节")
         self.start_value.setText(f"0x{frame.start_position:04X} ({frame.start_position})")
-        self.end_value.setText(f"0x{frame.end_position:04X} ({frame.end_position})")
+        # 结束位置应该是最后一个字节的位置（不包含）
+        self.end_value.setText(f"0x{frame.end_position-1:04X} ({frame.end_position-1})")
         
         # 更新原始数据（格式化为每行16字节）
         formatted_hex = self._format_hex_data(raw_hex)
@@ -318,6 +320,9 @@ class FrameDetailInterface(QWidget):
         value_style = "color: #0078D4; font-size: 13px; padding: 8px; background: #F8F8F8; border-radius: 4px; font-family: 'Courier New', monospace;"
         type_style = "color: #888888; font-size: 11px; font-style: italic;"
         
+        # 导入格式化函数
+        from models.protocol import format_field_value
+        
         # 添加字段（2列布局）
         row = 0
         col = 0
@@ -329,9 +334,12 @@ class FrameDetailInterface(QWidget):
             name_label = BodyLabel(f"🔹 {key}:")
             name_label.setStyleSheet(name_style)
             
-            value_label = BodyLabel(str(value))
+            # 格式化字段值显示
+            value_label = BodyLabel(format_field_value(value))
             value_label.setStyleSheet(value_style)
             value_label.setWordWrap(True)
+            # 允许文本选择和复制
+            value_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             
             # 添加到网格
             self.fields_grid.addWidget(name_label, row, col * 2)

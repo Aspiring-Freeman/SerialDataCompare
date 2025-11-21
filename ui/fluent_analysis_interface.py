@@ -11,6 +11,7 @@ from qfluentwidgets import (
 )
 
 from models import ParseResult
+from ui.history_dialog import HistoryDialog
 
 
 class AnalysisInterface(QWidget):
@@ -19,9 +20,10 @@ class AnalysisInterface(QWidget):
     analysis_started = Signal(str)
     frame_selected = Signal(int)
     
-    def __init__(self, parent=None):
+    def __init__(self, analysis_history=None, parent=None):
         super().__init__(parent)
         self.setObjectName("analysis_interface")
+        self.analysis_history = analysis_history
         
         # 主布局
         main_layout = QVBoxLayout(self)
@@ -110,13 +112,26 @@ class AnalysisInterface(QWidget):
         
         analyze_btn = PushButton(FIF.SEARCH, "开始分析")
         analyze_btn.clicked.connect(self.start_analysis)
+        analyze_btn.setToolTip("点击按钮开始分析，非实时分析")
         button_layout.addWidget(analyze_btn)
         
         clear_btn = PushButton(FIF.DELETE, "清空")
         clear_btn.clicked.connect(self.input_text.clear)
         button_layout.addWidget(clear_btn)
         
+        # 分析历史
+        history_btn = PushButton(FIF.HISTORY, "分析历史")
+        history_btn.setToolTip("查看历史分析记录")
+        history_btn.clicked.connect(self.show_analysis_history)
+        button_layout.addWidget(history_btn)
+        
         button_layout.addStretch()
+        
+        # 添加提示文本
+        tip_label = BodyLabel("ℹ️ 提示：点击“开始分析”按钮进行数据解析，非实时分析")
+        tip_label.setStyleSheet("color: #888888; font-size: 12px; font-style: italic;")
+        button_layout.addWidget(tip_label)
+        
         card_layout.addLayout(button_layout)
         
         self.scroll_layout.addWidget(card)
@@ -235,6 +250,9 @@ class AnalysisInterface(QWidget):
     
     def show_result(self, result: ParseResult):
         """显示分析结果"""
+        # 先清空表格，提高性能
+        self.result_table.clearContents()
+        self.result_table.setRowCount(0)
         self.result_table.setRowCount(len(result.frames))
         
         for i, frame in enumerate(result.frames):
@@ -251,9 +269,12 @@ class AnalysisInterface(QWidget):
             raw_hex = frame.raw_data.hex().upper() if isinstance(frame.raw_data, bytes) else str(frame.raw_data)
             self.result_table.setItem(i, 3, QTableWidgetItem(raw_hex))
             
-            # 解析结果
+            # 导入格式化函数
+            from models.protocol import format_field_value
+            
+            # 解析结果（格式化字段值）
             parsed = ", ".join([
-                f"{k}: {v}" for k, v in frame.fields.items()
+                f"{k}: {format_field_value(v)}" for k, v in frame.fields.items()
             ])
             self.result_table.setItem(i, 4, QTableWidgetItem(parsed))
         
@@ -267,11 +288,17 @@ class AnalysisInterface(QWidget):
             parent=self
         )
     
+    def clear_results(self):
+        """清空分析结果"""
+        self.result_table.clearContents()
+        self.result_table.setRowCount(0)
+    
     def on_selection_changed(self):
-        """选择改变"""
-        selected = self.result_table.currentRow()
-        if selected >= 0:
-            self.frame_selected.emit(selected)
+        """表格选择变化"""
+        selected_rows = self.result_table.selectedIndexes()
+        if selected_rows:
+            row = selected_rows[0].row()
+            self.frame_selected.emit(row)
     
     def export_txt(self):
         """导出TXT"""
@@ -298,3 +325,18 @@ class AnalysisInterface(QWidget):
             duration=2000,
             parent=self
         )
+    
+    def show_analysis_history(self):
+        """显示分析历史记录"""
+        if not self.analysis_history:
+            InfoBar.warning(
+                title="未初始化",
+                content="分析历史功能未初始化",
+                parent=self,
+                position=InfoBarPosition.TOP
+            )
+            return
+        
+        # 创建并显示历史对话框
+        dialog = HistoryDialog(self.analysis_history, self)
+        dialog.exec()

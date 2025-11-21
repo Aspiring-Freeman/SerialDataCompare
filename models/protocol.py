@@ -44,6 +44,30 @@ class Endianness(Enum):
     LITTLE = "little"  # 小端（x86字节序）
 
 
+def format_field_value(value: Any, field_type: Optional['FieldType'] = None) -> str:
+    """
+    格式化字段值以供显示，将bytes对象转换为可读的十六进制字符串
+    
+    Args:
+        value: 字段值（可能是bytes、int、float、str等）
+        field_type: 字段类型（可选）
+        
+    Returns:
+        格式化后的字符串
+    """
+    if isinstance(value, bytes):
+        # 将bytes转换为大写十六进制字符串，用空格分隔
+        return ' '.join(f'{b:02X}' for b in value)
+    elif field_type == FieldType.BYTES if field_type else False:
+        # 如果指定了BYTES类型但值不是bytes，尝试转换
+        if isinstance(value, (list, tuple)):
+            return ' '.join(f'{b:02X}' for b in value)
+        elif isinstance(value, int):
+            # 整数显示为十六进制
+            return f'{value:02X}'
+    return str(value)
+
+
 @dataclass
 class ChecksumConfig:
     """校验配置（简化版）"""
@@ -78,14 +102,22 @@ class FieldDefinition:
     length_field: Optional[str] = None
     # 字节序（仅对多字节类型有效）
     endianness: Endianness = Endianness.BIG
+    # 锁定状态（锁定后不允许编辑）
+    locked: bool = False
     
     def is_multi_byte_type(self) -> bool:
         """判断是否为多字节类型"""
-        return self.field_type in [
+        # 对于数值类型，直接返回True
+        if self.field_type in [
             FieldType.UINT16, FieldType.UINT32,
             FieldType.INT16, FieldType.INT32,
             FieldType.FLOAT, FieldType.DOUBLE
-        ]
+        ]:
+            return True
+        # 对于 BYTES 和 STRING，检查长度是否大于1
+        if self.field_type in [FieldType.BYTES, FieldType.STRING]:
+            return self.byte_count > 1
+        return False
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
@@ -95,7 +127,8 @@ class FieldDefinition:
             'field_type': self.field_type.value,
             'description': self.description,
             'order': self.order,
-            'length_field': self.length_field
+            'length_field': self.length_field,
+            'locked': self.locked
         }
         # 只有多字节类型才保存字节序
         if self.is_multi_byte_type():
@@ -118,7 +151,8 @@ class FieldDefinition:
             description=data.get('description', ''),
             order=data.get('order', 0),
             length_field=data.get('length_field'),
-            endianness=endianness
+            endianness=endianness,
+            locked=data.get('locked', False)
         )
 
 

@@ -13,6 +13,7 @@ from qfluentwidgets import (
 )
 
 from models import ProtocolConfig, FieldDefinition, ChecksumConfig, ChecksumType, FieldType, Endianness
+from ui.protocol_history_dialog import ProtocolHistoryDialog
 
 
 class ProtocolInterface(QWidget):
@@ -21,9 +22,10 @@ class ProtocolInterface(QWidget):
     protocol_loaded = Signal(ProtocolConfig)
     protocol_saved = Signal(ProtocolConfig)
     
-    def __init__(self, parent=None):
+    def __init__(self, protocol_history=None, parent=None):
         super().__init__(parent)
         self.setObjectName("protocol_interface")
+        self.protocol_history = protocol_history
         
         # 主布局
         main_layout = QVBoxLayout(self)
@@ -119,6 +121,18 @@ class ProtocolInterface(QWidget):
         title = TitleLabel("字段定义")
         title_layout.addWidget(title)
         title_layout.addStretch()
+        
+        # 全部锁定按钮
+        lock_all_btn = PushButton(FIF.ACCEPT, "全部锁定")
+        lock_all_btn.setToolTip("锁定所有字段，防止意外修改")
+        lock_all_btn.clicked.connect(self.lock_all_fields)
+        title_layout.addWidget(lock_all_btn)
+        
+        # 全部解锁按钮
+        unlock_all_btn = PushButton(FIF.CANCEL, "全部解锁")
+        unlock_all_btn.setToolTip("解锁所有字段，允许编辑")
+        unlock_all_btn.clicked.connect(self.unlock_all_fields)
+        title_layout.addWidget(unlock_all_btn)
         
         # 添加字段按钮
         add_btn = PushButton(FIF.ADD, "添加字段")
@@ -265,6 +279,18 @@ class ProtocolInterface(QWidget):
         save_btn.clicked.connect(self.save_protocol)
         button_layout.addWidget(save_btn)
         
+        # 应用协议（使当前配置生效）
+        apply_btn = PushButton(FIF.ACCEPT, "应用协议")
+        apply_btn.setToolTip("将当前协议配置应用到分析，无需保存文件")
+        apply_btn.clicked.connect(self.apply_protocol)
+        button_layout.addWidget(apply_btn)
+        
+        # 协议历史
+        history_btn = PushButton(FIF.HISTORY, "协议历史")
+        history_btn.setToolTip("查看最近使用的协议配置")
+        history_btn.clicked.connect(self.show_protocol_history)
+        button_layout.addWidget(history_btn)
+        
         # 清空
         clear_btn = PushButton(FIF.DELETE, "清空")
         clear_btn.clicked.connect(self.clear_form)
@@ -324,25 +350,67 @@ class ProtocolInterface(QWidget):
         endian_combo = ComboBox()
         endian_combo.addItems(["大端", "小端"])
         endian_combo.setMinimumWidth(100)
+        endian_combo.setEnabled(True)  # 默认启用
         field_layout.addWidget(endian_label)
         field_layout.addWidget(endian_combo, 1)
         
         # 根据类型和长度决定是否启用字节序选择
         def update_endian_state():
-            field_type = type_combo.currentText()
             length = length_spin.value()
-            # 只有"整数"和"浮点数"类型，且长度 > 1 时才需要字节序
-            is_multi_byte = (field_type in ["整数", "浮点数"]) and (length > 1)
-            endian_combo.setEnabled(is_multi_byte)
-            if not is_multi_byte:
-                endian_combo.setCurrentIndex(0)  # 重置为大端
-                endian_label.setStyleSheet("color: #999999;")  # 灰色文本
+            # 所有类型（包括字符串）在长度>1时都可以选择字节序
+            if length > 1:
+                endian_combo.setEnabled(True)
+                endian_label.setStyleSheet("")  # 正常颜色
             else:
-                endian_label.setStyleSheet("")  # 恢复正常颜色
+                # 长度为1时也启用，但显示为灰色提示
+                endian_combo.setEnabled(True)
+                endian_label.setStyleSheet("color: #999999;")
         
         type_combo.currentTextChanged.connect(update_endian_state)
         length_spin.valueChanged.connect(update_endian_state)
         update_endian_state()  # 初始化状态
+        
+        # 锁定按钮
+        lock_btn = PushButton("🔓 解锁")
+        lock_btn.setFixedWidth(80)
+        lock_btn.setToolTip("当前字段未锁定，点击锁定以防止意外修改")
+        
+        # 锁定状态存储（使用列表避免闭包问题）
+        lock_state = [False]
+        
+        # 使用默认参数捕获当前控件引用，避免闭包问题
+        def make_toggle_lock(btn, state, n_edit, t_combo, s_spin, l_spin, e_combo, e_label, update_fn):
+            def toggle():
+                state[0] = not state[0]
+                if state[0]:
+                    btn.setText("🔒 已锁定")
+                    btn.setToolTip("当前字段已锁定，点击解锁以允许编辑")
+                    n_edit.setEnabled(False)
+                    t_combo.setEnabled(False)
+                    s_spin.setEnabled(False)
+                    l_spin.setEnabled(False)
+                    e_combo.setEnabled(False)
+                else:
+                    btn.setText("🔓 解锁")
+                    btn.setToolTip("当前字段未锁定，点击锁定以防止意外修改")
+                    n_edit.setEnabled(True)
+                    t_combo.setEnabled(True)
+                    s_spin.setEnabled(True)
+                    l_spin.setEnabled(True)
+                    # 解锁时根据当前长度判断是否启用字节序
+                    length = l_spin.value()
+                    if length > 1:
+                        e_combo.setEnabled(True)
+                        e_label.setStyleSheet("")
+                    else:
+                        e_combo.setEnabled(True)
+                        e_label.setStyleSheet("color: #999999;")
+            return toggle
+        
+        toggle_lock = make_toggle_lock(lock_btn, lock_state, name_edit, type_combo, 
+                                       start_spin, length_spin, endian_combo, endian_label, update_endian_state)
+        lock_btn.clicked.connect(toggle_lock)
+        field_layout.addWidget(lock_btn)
         
         # 删除按钮
         del_btn = PushButton(FIF.DELETE, "删除")
@@ -356,6 +424,10 @@ class ProtocolInterface(QWidget):
         field_card.endian_combo = endian_combo
         field_card.start_spin = start_spin
         field_card.length_spin = length_spin
+        field_card.lock_btn = lock_btn
+        field_card.lock_state = lock_state
+        field_card.is_locked = lambda s=lock_state: s[0]
+        field_card.toggle_lock = toggle_lock
         
         self.fields_layout.addWidget(field_card)
     
@@ -363,6 +435,28 @@ class ProtocolInterface(QWidget):
         """移除字段"""
         self.fields_layout.removeWidget(field_card)
         field_card.deleteLater()
+    
+    def lock_all_fields(self):
+        """锁定所有字段"""
+        for i in range(self.fields_layout.count()):
+            field_card = self.fields_layout.itemAt(i).widget()
+            if field_card and hasattr(field_card, 'lock_state'):
+                # 直接检查并设置锁定状态（lock_state现在是列表）
+                if not field_card.lock_state[0]:
+                    # 调用toggle_lock来锁定
+                    if hasattr(field_card, 'toggle_lock'):
+                        field_card.toggle_lock()
+    
+    def unlock_all_fields(self):
+        """解锁所有字段"""
+        for i in range(self.fields_layout.count()):
+            field_card = self.fields_layout.itemAt(i).widget()
+            if field_card and hasattr(field_card, 'lock_state'):
+                # 直接检查并设置解锁状态（lock_state现在是列表）
+                if field_card.lock_state[0]:
+                    # 调用toggle_lock来解锁
+                    if hasattr(field_card, 'toggle_lock'):
+                        field_card.toggle_lock()
     
     def load_protocol(self):
         """加载协议"""
@@ -455,13 +549,17 @@ class ProtocolInterface(QWidget):
                 # 字节序映射
                 endianness = Endianness.BIG if endian_text == "大端" else Endianness.LITTLE
                 
+                # 获取锁定状态
+                locked = field_card.lock_state[0] if hasattr(field_card, 'lock_state') else False
+                
                 # 创建字段定义
                 field_def = FieldDefinition(
                     name=name,
                     byte_count=length,
                     field_type=field_type,
                     order=start,
-                    endianness=endianness
+                    endianness=endianness,
+                    locked=locked
                 )
                 fields.append(field_def)
             
@@ -551,6 +649,138 @@ class ProtocolInterface(QWidget):
             InfoBar.error(
                 title="错误",
                 content=f"保存失败: {str(e)}",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+            import traceback
+            traceback.print_exc()
+    
+    def apply_protocol(self):
+        """应用当前协议配置（不保存文件，直接使配置生效）"""
+        if not self.name_edit.text():
+            InfoBar.warning(
+                title="警告",
+                content="请输入协议名称",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+            return
+        
+        try:
+            from core.protocol_manager import ProtocolManager
+            
+            # 收集字段信息（与save_protocol相同的逻辑）
+            fields = []
+            for i in range(self.fields_layout.count()):
+                field_card = self.fields_layout.itemAt(i).widget()
+                if not field_card or not hasattr(field_card, 'name_edit'):
+                    continue
+                
+                # 获取字段信息
+                name = field_card.name_edit.text()
+                type_text = field_card.type_combo.currentText()
+                endian_text = field_card.endian_combo.currentText()
+                start = field_card.start_spin.value()
+                length = field_card.length_spin.value()
+                
+                # 类型映射
+                type_map = {
+                    "整数": FieldType.UINT8 if length == 1 else (FieldType.UINT16 if length == 2 else FieldType.UINT32),
+                    "浮点数": FieldType.FLOAT if length == 4 else FieldType.DOUBLE,
+                    "字符串": FieldType.STRING,
+                    "十六进制": FieldType.BYTES
+                }
+                field_type = type_map.get(type_text, FieldType.UINT8)
+                
+                # 字节序映射
+                endianness = Endianness.BIG if endian_text == "大端" else Endianness.LITTLE
+                
+                # 获取锁定状态
+                locked = field_card.lock_state[0] if hasattr(field_card, 'lock_state') else False
+                
+                # 创建字段定义
+                field_def = FieldDefinition(
+                    name=name,
+                    byte_count=length,
+                    field_type=field_type,
+                    order=start,
+                    endianness=endianness,
+                    locked=locked
+                )
+                fields.append(field_def)
+            
+            # 收集校验信息
+            checksum_config = None
+            if self.checksum_enable.isChecked():
+                # 校验类型映射
+                checksum_type_map = {
+                    "累加和": ChecksumType.SUM,
+                    "CRC16": ChecksumType.CRC16,
+                    "CRC32": ChecksumType.CRC32,
+                    "异或": ChecksumType.XOR
+                }
+                checksum_type = checksum_type_map.get(self.checksum_type.currentText(), ChecksumType.SUM)
+                
+                # 校验位置映射
+                from models.protocol import ChecksumPosition
+                position_map = {
+                    "帧尾前": ChecksumPosition.BEFORE_TAIL,
+                    "帧尾后": ChecksumPosition.AFTER_TAIL
+                }
+                position = position_map.get(self.checksum_position.currentText(), ChecksumPosition.BEFORE_TAIL)
+                
+                # 获取校验配置详细信息
+                checksum_pos = self.checksum_byte_position.value() if hasattr(self, 'checksum_byte_position') else None
+                checksum_len = self.checksum_length.value() if hasattr(self, 'checksum_length') else 1
+                checksum_start_val = self.checksum_start.value() if hasattr(self, 'checksum_start') else None
+                checksum_end_val = self.checksum_end.value() if hasattr(self, 'checksum_end') else None
+                
+                # 如果checksum_pos为0则设为None（表示使用相对位置）
+                if checksum_pos == 0:
+                    checksum_pos = None
+                
+                checksum_config = ChecksumConfig(
+                    checksum_type=checksum_type,
+                    position=position,
+                    checksum_position=checksum_pos,
+                    checksum_length=checksum_len,
+                    checksum_start=checksum_start_val,
+                    checksum_end=checksum_end_val
+                )
+            
+            # 创建协议配置
+            protocol = ProtocolConfig(
+                protocol_name=self.name_edit.text(),
+                description=self.desc_edit.toPlainText(),
+                frame_header=self.header_edit.text() if self.header_edit.text() else None,
+                frame_tail=self.footer_edit.text() if self.footer_edit.text() else None,
+                fields=fields,
+                checksum_config=checksum_config
+            )
+            
+            # 发送信号，使协议生效
+            self.protocol_loaded.emit(protocol)
+            
+            InfoBar.success(
+                title="成功",
+                content=f"协议 '{protocol.protocol_name}' 已应用，可以开始分析数据",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+            
+        except Exception as e:
+            InfoBar.error(
+                title="错误",
+                content=f"应用失败: {str(e)}",
                 orient=Qt.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -669,19 +899,71 @@ class ProtocolInterface(QWidget):
                     
                     # 根据类型和长度决定是否启用字节序选择
                     def update_endian_state():
-                        field_type = type_combo.currentText()
                         length = length_spin.value()
-                        is_multi_byte = (field_type in ["整数", "浮点数"]) and (length > 1)
-                        endian_combo.setEnabled(is_multi_byte)
-                        if not is_multi_byte:
-                            endian_combo.setCurrentIndex(0)  # 重置为大端
-                            endian_label.setStyleSheet("color: #999999;")
-                        else:
+                        # 所有类型在长度>1时都可以选择字节序
+                        if length > 1:
+                            endian_combo.setEnabled(True)
                             endian_label.setStyleSheet("")
+                        else:
+                            endian_combo.setEnabled(True)
+                            endian_label.setStyleSheet("color: #999999;")
                     
                     type_combo.currentTextChanged.connect(update_endian_state)
                     length_spin.valueChanged.connect(update_endian_state)
                     update_endian_state()  # 初始化状态
+                    
+                    # 锁定按钮
+                    lock_btn = PushButton("🔓 解锁")
+                    lock_btn.setFixedWidth(80)
+                    lock_btn.setToolTip("当前字段未锁定，点击锁定以防止意外修改")
+                    
+                    # 锁定状态存储（从配置中恢复，使用列表避免闭包问题）
+                    initial_locked = field_config.locked if hasattr(field_config, 'locked') else False
+                    lock_state = [initial_locked]
+                    
+                    # 使用默认参数捕获当前控件引用，避免闭包问题
+                    def make_toggle_lock_loaded(btn, state, n_edit, t_combo, s_spin, l_spin, e_combo, e_label, update_fn):
+                        def toggle():
+                            state[0] = not state[0]
+                            if state[0]:
+                                btn.setText("🔒 已锁定")
+                                btn.setToolTip("当前字段已锁定，点击解锁以允许编辑")
+                                n_edit.setEnabled(False)
+                                t_combo.setEnabled(False)
+                                s_spin.setEnabled(False)
+                                l_spin.setEnabled(False)
+                                e_combo.setEnabled(False)
+                            else:
+                                btn.setText("🔓 解锁")
+                                btn.setToolTip("当前字段未锁定，点击锁定以防止意外修改")
+                                n_edit.setEnabled(True)
+                                t_combo.setEnabled(True)
+                                s_spin.setEnabled(True)
+                                l_spin.setEnabled(True)
+                                # 解锁时根据当前长度判断是否启用字节序
+                                length = l_spin.value()
+                                if length > 1:
+                                    e_combo.setEnabled(True)
+                                    e_label.setStyleSheet("")
+                                else:
+                                    e_combo.setEnabled(True)
+                                    e_label.setStyleSheet("color: #999999;")
+                        return toggle
+                    
+                    toggle_lock = make_toggle_lock_loaded(lock_btn, lock_state, name_edit, type_combo,
+                                                          start_spin, length_spin, endian_combo, endian_label, update_endian_state)
+                    lock_btn.clicked.connect(toggle_lock)
+                    field_layout.addWidget(lock_btn)
+                    
+                    # 如果字段已锁定，应用锁定状态
+                    if initial_locked:
+                        lock_btn.setText("🔒 已锁定")
+                        lock_btn.setToolTip("当前字段已锁定，点击解锁以允许编辑")
+                        name_edit.setEnabled(False)
+                        type_combo.setEnabled(False)
+                        start_spin.setEnabled(False)
+                        length_spin.setEnabled(False)
+                        endian_combo.setEnabled(False)
                     
                     # 删除按钮
                     del_btn = PushButton(FIF.DELETE, "删除")
@@ -694,6 +976,10 @@ class ProtocolInterface(QWidget):
                     field_card.endian_combo = endian_combo
                     field_card.start_spin = start_spin
                     field_card.length_spin = length_spin
+                    field_card.lock_btn = lock_btn
+                    field_card.lock_state = lock_state
+                    field_card.is_locked = lambda s=lock_state: s[0]
+                    field_card.toggle_lock = toggle_lock
                     
                     self.fields_layout.addWidget(field_card)
             
@@ -746,3 +1032,41 @@ class ProtocolInterface(QWidget):
             print(f"加载协议数据时出错: {e}")
             import traceback
             traceback.print_exc()
+    
+    def show_protocol_history(self):
+        """显示协议历史记录"""
+        if not self.protocol_history:
+            InfoBar.warning(
+                title="未初始化",
+                content="协议历史功能未初始化",
+                parent=self,
+                position=InfoBarPosition.TOP
+            )
+            return
+        
+        # 创建并显示协议历史对话框
+        dialog = ProtocolHistoryDialog(self.protocol_history, self)
+        dialog.protocol_selected.connect(self.load_protocol_from_path)
+        dialog.exec()
+    
+    def load_protocol_from_path(self, file_path: str):
+        """从指定路径加载协议"""
+        try:
+            from core import ProtocolManager
+            protocol = ProtocolManager.load_protocol(file_path)
+            self.load_protocol_data(protocol)
+            self.protocol_loaded.emit(protocol)
+            
+            InfoBar.success(
+                title="成功",
+                content=f"已加载协议：{protocol.name}",
+                parent=self,
+                position=InfoBarPosition.TOP
+            )
+        except Exception as e:
+            InfoBar.error(
+                title="加载失败",
+                content=f"加载协议失败：{str(e)}",
+                parent=self,
+                position=InfoBarPosition.TOP
+            )

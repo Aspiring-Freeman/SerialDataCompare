@@ -1,70 +1,63 @@
 """
 历史记录查看对话框
 """
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QTableWidget, 
-    QTableWidgetItem, QPushButton, QTextEdit, QSplitter,
-    QLabel, QMessageBox
-)
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidgetItem
 from PySide6.QtCore import Qt
+from qfluentwidgets import (
+    MessageBoxBase, SubtitleLabel, BodyLabel,
+    TableWidget, PushButton, TextEdit, MessageBox
+)
 from core.analysis_history import AnalysisHistory
 
 
-class HistoryDialog(QDialog):
+class HistoryDialog(MessageBoxBase):
     """历史记录对话框"""
     
     def __init__(self, history_manager: AnalysisHistory, parent=None):
         super().__init__(parent)
         self.history_manager = history_manager
-        self.setWindowTitle("分析历史记录")
-        self.resize(900, 600)
+        self.titleLabel = SubtitleLabel("分析历史记录", self)
         self.setup_ui()
         self.load_history()
+        
+        # 设置对话框大小
+        self.widget.setMinimumWidth(900)
+        self.widget.setMinimumHeight(600)
     
     def setup_ui(self):
         """设置UI"""
-        layout = QVBoxLayout(self)
-        
-        # 创建分割器
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        
         # 历史记录表格
-        self.table = QTableWidget()
+        self.table = TableWidget()
         self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
             "时间", "协议", "总帧数", "有效帧", "错误帧", "输入数据"
         ])
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditEnabled(False)
         self.table.setAlternatingRowColors(True)
         self.table.itemSelectionChanged.connect(self.on_selection_changed)
-        splitter.addWidget(self.table)
+        self.table.setMinimumHeight(300)
+        self.viewLayout.addWidget(self.table)
         
-        # 详细信息
-        detail_widget = QTextEdit()
-        detail_widget.setReadOnly(True)
-        self.detail_text = detail_widget
-        splitter.addWidget(detail_widget)
+        # 详细信息标题
+        detail_label = BodyLabel("详细信息:")
+        detail_label.setStyleSheet("font-weight: bold;")
+        self.viewLayout.addWidget(detail_label)
         
-        splitter.setStretchFactor(0, 2)
-        splitter.setStretchFactor(1, 1)
+        # 详细信息文本
+        self.detail_text = TextEdit()
+        self.detail_text.setReadOnly(True)
+        self.detail_text.setMinimumHeight(150)
+        self.viewLayout.addWidget(self.detail_text)
         
-        layout.addWidget(splitter)
-        
-        # 按钮
-        btn_layout = QHBoxLayout()
-        
-        self.btn_clear = QPushButton("清空历史")
+        # 添加按钮
+        self.btn_clear = PushButton("清空历史")
         self.btn_clear.clicked.connect(self.on_clear_clicked)
-        btn_layout.addWidget(self.btn_clear)
         
-        btn_layout.addStretch()
+        # 添加按钮到底部
+        self.yesButton.setText("关闭")
+        self.yesButton.clicked.connect(lambda: self.accept())
         
-        self.btn_close = QPushButton("关闭")
-        self.btn_close.clicked.connect(self.accept)
-        btn_layout.addWidget(self.btn_close)
-        
-        layout.addLayout(btn_layout)
+        self.buttonGroup.layout().addWidget(self.btn_clear)
     
     def load_history(self):
         """加载历史记录"""
@@ -131,13 +124,9 @@ class HistoryDialog(QDialog):
     
     def on_clear_clicked(self):
         """清空历史"""
-        reply = QMessageBox.question(
-            self, "确认", "确定要清空所有历史记录吗？",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
+        w = MessageBox("确认", "确定要清空所有历史记录吗？", self.window())
+        if w.exec():
             self.history_manager.clear_history()
             self.load_history()
             self.detail_text.clear()
-            QMessageBox.information(self, "成功", "历史记录已清空！")
+            MessageBox("成功", "历史记录已清空！", self.window()).exec()

@@ -86,17 +86,14 @@ class MainWindow(FluentWindow):
         self.resize(1600, 1000)
         self.setWindowTitle('串口数据分析工具 v2.0 - Fluent Design')
         
-        # 设置默认主题 - 使用 LIGHT 而不是 AUTO 避免初始化问题
-        setTheme(Theme.LIGHT)
-        
-        # 确保窗口样式正确应用
-        self.setStyleSheet("background-color: transparent;")
+        # 设置默认主题
+        setTheme(Theme.AUTO)
     
     def init_navigation(self):
         """初始化导航栏"""
         # 创建子界面
-        self.protocol_interface = ProtocolInterface(self.protocol_history, self)
-        self.analysis_interface = AnalysisInterface(self.analysis_history, self)
+        self.protocol_interface = ProtocolInterface(self)
+        self.analysis_interface = AnalysisInterface(self)
         self.frame_detail_interface = FrameDetailInterface(self)
         self.log_interface = LogInterface(self)
         self.settings_interface = SettingsInterface(self)
@@ -188,16 +185,11 @@ class MainWindow(FluentWindow):
         self.current_protocol = protocol
         self.logger.info(f"协议已加载: {protocol.protocol_name}")
         
-        # 清空之前的解析结果
-        self.parse_result = None
-        self.analysis_interface.clear_results()
-        
         # 更新分析界面
         self.analysis_interface.set_protocol(protocol)
         
-        # 添加到历史记录（如果有文件路径）
-        if hasattr(protocol, 'file_path') and protocol.file_path:
-            self.protocol_history.add_protocol(protocol.file_path, protocol.protocol_name)
+        # 添加到历史记录
+        self.protocol_history.add_protocol(protocol)
         
         # 显示成功消息
         InfoBar.success(
@@ -215,13 +207,8 @@ class MainWindow(FluentWindow):
         self.current_protocol = protocol
         self.logger.info(f"协议已保存: {protocol.protocol_name}")
         
-        # 添加到历史记录（如果有文件路径）
-        if hasattr(protocol, 'file_path') and protocol.file_path:
-            self.protocol_history.add_protocol(protocol.file_path, protocol.protocol_name)
-        
-        # 清空之前的解析结果
-        self.parse_result = None
-        self.analysis_interface.clear_results()
+        # 添加到历史记录
+        self.protocol_history.add_protocol(protocol)
         
         # 更新分析界面
         self.analysis_interface.set_protocol(protocol)
@@ -271,30 +258,10 @@ class MainWindow(FluentWindow):
         self.analysis_interface.show_result(result)
         
         # 添加到历史记录
-        if self.current_protocol:
-            # 统计有效和错误帧数
-            valid_frames = sum(1 for frame in result.frames if not frame.has_error)
-            error_frames = sum(1 for frame in result.frames if frame.has_error)
-            
-            # 转换帧详情格式
-            frame_details = [
-                {
-                    'frame_number': frame.frame_number,
-                    'has_error': frame.has_error,
-                    'checksum_valid': frame.checksum_valid,
-                    'raw_data_hex': frame.raw_data.hex() if isinstance(frame.raw_data, bytes) else str(frame.raw_data)
-                }
-                for frame in result.frames
-            ]
-            
-            self.analysis_history.add_analysis(
-                protocol_name=self.current_protocol.protocol_name,
-                input_data=result.input_data,
-                total_frames=len(result.frames),
-                valid_frames=valid_frames,
-                error_frames=error_frames,
-                frame_details=frame_details
-            )
+        self.analysis_history.add_result(
+            protocol=self.current_protocol,
+            result=result
+        )
         
         self.logger.info(f"分析完成: 找到 {len(result.frames)} 个数据帧")
         

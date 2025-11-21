@@ -1,6 +1,6 @@
 {
   "protocol_name": "工业通信器物协议_简化版",
-  "version": "1.2",
+  "version": "1.0",
   "description": "工业通信器物档案协议规格（简化配置：固定帧长度+绝对位置）",
   "frame_header": "68",
   "frame_tail": "16",
@@ -18,218 +18,255 @@
     {
       "name": "设备测试标识",
       "byte_count": 1,
-      "field_type": "uint8",
-      "description": "返回测试结果指示位",
+      "field_type": "bytes",
+      "description": "",
       "order": 0,
-      "length_field": null
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "整包长度",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "一帧所有的字节",
-      "order": 1,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "工位号",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "工位",
-      "order": 2,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "19V电压(供电电压)",
       "byte_count": 2,
       "field_type": "uint16",
-      "description": "19V电压(供电电压)",
-      "order": 3,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
     },
     {
       "name": "主电电压(协议获取)",
       "byte_count": 2,
       "field_type": "uint16",
-      "description": "主电电压协议获取",
-      "order": 4,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
     },
     {
       "name": "静态功耗",
       "byte_count": 2,
       "field_type": "uint16",
-      "description": "静态功耗",
-      "order": 5,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
     },
     {
       "name": "运行功耗",
       "byte_count": 2,
       "field_type": "uint16",
-      "description": "运行功耗",
-      "order": 6,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
     },
     {
       "name": "蓝牙模块",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "蓝牙模块",
-      "order": 7,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "flash检测",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "flash检测",
-      "order": 8,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "IMEI号",
       "byte_count": 15,
       "field_type": "string",
-      "description": "IMEI",
-      "order": 9,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
     },
     {
       "name": "IMSI号",
       "byte_count": 15,
       "field_type": "string",
-      "description": "IMSI",
-      "order": 10,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
     },
     {
       "name": "ICCID号",
       "byte_count": 20,
       "field_type": "string",
-      "description": "ICCID",
-      "order": 11,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
     },
     {
       "name": "CSQ",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "信号强度",
-      "order": 12,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "阀门状态",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "阀门状态",
-      "order": 13,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "阀门到位状态",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "阀门到位状态",
-      "order": 14,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "校验码",
       "byte_count": 2,
-      "field_type": "uint8",
-      "description": "校验码,00 00",
-      "order": 15,
-      "length_field": null
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
     },
     {
       "name": "程序版本号",
       "byte_count": 2,
-      "field_type": "uint8",
-      "description": "程序版本号 小端模式",
-      "order": 16,
-      "length_field": null
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
     },
     {
       "name": "倾角模块状态",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "倾角模块  状态",
-      "order": 17,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "LCD 通讯状态",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "LCD 通讯状态",
-      "order": 18,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "KEY_ON  按键状态",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "KEY_ON  按键状态",
-      "order": 19,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "KEY_OFF  按键状态",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "KEY_OFF  按键状态",
-      "order": 20,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "DOOR_EN  状态",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "DOOR_EN  状态",
-      "order": 21,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "电 源 管 理 芯 片  状态",
       "byte_count": 1,
-      "field_type": "bytes",
-      "description": "电 源 管 理 芯 片  状态",
-      "order": 22,
-      "length_field": null
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "压 力 传 感 器 电压",
       "byte_count": 2,
-      "field_type": "uint8",
-      "description": "压 力 传 感 器 电压 大端模式，3.6V",
-      "order": 23,
-      "length_field": null
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
     },
     {
       "name": "485 通讯状态",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "485 通讯状态",
-      "order": 24,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "NFC 通讯状态",
       "byte_count": 1,
       "field_type": "uint8",
-      "description": "NFC 通讯状态",
-      "order": 25,
-      "length_field": null
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     },
     {
       "name": "校验码字段",
-      "byte_count": 2,
-      "field_type": "bytes",
-      "description": "数据中的校验码字段（不是帧校验码）",
-      "order": 26,
-      "length_field": null
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
     }
   ]
 }

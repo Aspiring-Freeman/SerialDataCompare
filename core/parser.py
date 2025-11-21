@@ -183,10 +183,13 @@ class DataParser:
         """
         field_type = field_def.field_type
         
-        # 确定字节序前缀
+        # 确定字节序前缀（默认大端）
         from models import Endianness
-        endian_prefix = '>' if (hasattr(field_def, 'endianness') and 
-                                field_def.endianness == Endianness.BIG) else '<'
+        if hasattr(field_def, 'endianness'):
+            endian_prefix = '>' if field_def.endianness == Endianness.BIG else '<'
+        else:
+            # 如果没有endianness属性，默认使用大端
+            endian_prefix = '>'
         
         try:
             if field_type == FieldType.UINT8:
@@ -228,9 +231,22 @@ class DataParser:
                 return 0.0
             
             elif field_type == FieldType.BYTES:
+                # 十六进制类型也需要考虑字节序
+                if len(data) > 1 and hasattr(field_def, 'endianness'):
+                    from models import Endianness
+                    if field_def.endianness == Endianness.LITTLE:
+                        # 小端：需要反转字节顺序
+                        return bytes(reversed(data))
                 return data
             
             elif field_type == FieldType.STRING:
+                # 字符串类型也可能需要字节序处理（如UTF-16等）
+                if len(data) > 1 and hasattr(field_def, 'endianness'):
+                    from models import Endianness
+                    if field_def.endianness == Endianness.LITTLE:
+                        # 对于多字节字符编码，可能需要调整字节序
+                        # 这里保持简单处理，主要用于原始字节串
+                        pass
                 try:
                     return data.decode('utf-8').rstrip('\x00')
                 except:
