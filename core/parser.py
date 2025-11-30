@@ -148,7 +148,7 @@ class DataParser:
                 frame_end = tail_pos + tail_len
             
             # 验证帧的完整性（如果有帧尾，检查帧尾是否正确）
-            if frame_end > header_pos:
+            if frame_end is not None and frame_end > header_pos:
                 # 检查帧尾位置是否有正确的帧尾标识
                 expected_tail_pos = frame_end - tail_len
                 if expected_tail_pos >= 0 and expected_tail_pos + tail_len <= len(data):
@@ -156,13 +156,15 @@ class DataParser:
                     if actual_tail == tail:
                         # 帧尾正确，记录这一帧
                         frames.append((header_pos, frame_end))
-                        pos = frame_end
+                        # 确保 pos 始终向前移动，避免无限循环
+                        pos = max(frame_end, pos + 1)
                     else:
                         # 帧尾不匹配，可能是数据中的伪帧头，继续查找
                         pos = header_pos + 1
                 else:
                     frames.append((header_pos, frame_end))
-                    pos = frame_end
+                    # 确保 pos 始终向前移动，避免无限循环
+                    pos = max(frame_end, pos + 1)
             else:
                 # 异常情况，跳过这个帧头
                 pos = header_pos + 1
@@ -297,6 +299,12 @@ class DataParser:
                 # 变长字段，从长度字段获取
                 if field_def.length_field and field_def.length_field in fields:
                     field_len = fields[field_def.length_field]
+                    # 确保是整数类型
+                    if not isinstance(field_len, int):
+                        try:
+                            field_len = int(field_len)
+                        except (ValueError, TypeError):
+                            field_len = len(data_part) - offset
                 else:
                     # 取剩余所有数据
                     field_len = len(data_part) - offset
@@ -331,7 +339,7 @@ class DataParser:
         frame = DataFrame(
             frame_number=frame_number,
             start_position=start_position,
-            end_position=start_position + len(frame_data),
+            end_position=start_position + len(frame_data) - 1,  # 结束位置是最后一个字节的索引
             raw_data=frame_data
         )
         

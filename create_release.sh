@@ -10,8 +10,8 @@ then
     echo ""
     echo "或者手动创建 Release："
     echo "1. 访问 https://github.com/Aspiring-Freeman/SerialDataCompare/releases/new"
-    echo "2. 选择标签: v1.3.1"
-    echo "3. 复制 RELEASE_v1.3.1.md 的内容到描述框"
+    echo "2. 选择标签: v1.4.1"
+    echo "3. 复制 RELEASE_v1.4.1.md 的内容到描述框"
     exit 1
 fi
 
@@ -24,13 +24,13 @@ then
 fi
 
 # 创建 Release
-echo "创建 GitHub Release v1.3.1..."
+echo "创建 GitHub Release v1.4.1..."
 
-gh release create v1.3.1 \
-    --title "v1.3.1 - 简化协议配置和UI增强" \
-    --notes-file RELEASE_v1.3.1.md \
+gh release create v1.4.1 \
+    --title "v1.4.1 - 历史记录UI修复和完善" \
+    --notes-file RELEASE_v1.4.1.md \
     --target main
 
 echo ""
 echo "✅ Release 创建成功！"
-echo "查看: https://github.com/Aspiring-Freeman/SerialDataCompare/releases/tag/v1.3.1"
+echo "查看: https://github.com/Aspiring-Freeman/SerialDataCompare/releases/tag/v1.4.1"

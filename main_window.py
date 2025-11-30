@@ -24,6 +24,7 @@ from models import (
 from core import DataParser, ProtocolManager, ColorConfig
 from core.protocol_history import ProtocolHistory
 from core.analysis_history import AnalysisHistory
+from core.project_manager import ProjectManager
 from utils import export_to_txt, export_to_csv, Logger, LogLevel
 
 # 导入 Fluent 界面组件
@@ -32,6 +33,7 @@ from ui.fluent_analysis_interface import AnalysisInterface
 from ui.fluent_frame_detail_interface import FrameDetailInterface
 from ui.fluent_log_interface import LogInterface
 from ui.fluent_settings_interface import SettingsInterface
+from ui.fluent_project_interface import ProjectInterface
 
 
 class ParseThread(QThread):
@@ -70,6 +72,8 @@ class MainWindow(FluentWindow):
         self.analysis_history = AnalysisHistory()
         # 颜色配置管理器
         self.color_config = ColorConfig()
+        # 项目管理器
+        self.project_manager = ProjectManager()
         # 日志管理器
         self.logger = Logger()
         
@@ -95,6 +99,7 @@ class MainWindow(FluentWindow):
     def init_navigation(self):
         """初始化导航栏"""
         # 创建子界面
+        self.project_interface = ProjectInterface(self.project_manager, self)
         self.protocol_interface = ProtocolInterface(self.protocol_history, self)
         self.analysis_interface = AnalysisInterface(self.analysis_history, self)
         self.frame_detail_interface = FrameDetailInterface(self)
@@ -105,6 +110,13 @@ class MainWindow(FluentWindow):
         self.setup_connections()
         
         # 添加子界面到导航
+        self.addSubInterface(
+            self.project_interface,
+            FIF.FOLDER,
+            '项目管理',
+            NavigationItemPosition.TOP
+        )
+        
         self.addSubInterface(
             self.protocol_interface,
             FIF.DOCUMENT,
@@ -143,6 +155,9 @@ class MainWindow(FluentWindow):
     
     def setup_connections(self):
         """设置信号连接"""
+        # 项目管理界面信号
+        self.project_interface.protocol_selected.connect(self.on_project_protocol_selected)
+        
         # 协议配置界面信号
         self.protocol_interface.protocol_loaded.connect(self.on_protocol_loaded)
         self.protocol_interface.protocol_saved.connect(self.on_protocol_saved)
@@ -156,6 +171,39 @@ class MainWindow(FluentWindow):
         
         # 日志信号
         self.logger.log_added.connect(self.log_interface.add_log)
+    
+    def on_project_protocol_selected(self, protocol_path: str):
+        """从项目管理中选择协议时触发"""
+        self.logger.info(f"从项目加载协议: {protocol_path}")
+        
+        try:
+            # 检查文件是否存在
+            if not os.path.exists(protocol_path):
+                raise FileNotFoundError(f"协议文件不存在: {protocol_path}")
+            
+            # 加载协议
+            protocol = ProtocolManager.load_protocol(protocol_path)
+            
+            # 更新协议配置界面
+            self.protocol_interface.load_protocol_data(protocol)
+            
+            # 切换到协议配置界面
+            self.switchTo(self.protocol_interface)
+            
+            # 触发协议加载完成的处理
+            self.on_protocol_loaded(protocol)
+            
+        except Exception as e:
+            self.logger.error(f"加载协议失败: {str(e)}")
+            InfoBar.error(
+                title="加载失败",
+                content=f"无法加载协议: {str(e)}",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
     
     def init_protocol(self):
         """初始化协议配置"""
@@ -343,6 +391,19 @@ class MainWindow(FluentWindow):
             setTheme(Theme.AUTO)
         
         self.logger.info(f"主题已切换: {theme}")
+    
+    def closeEvent(self, event):
+        """窗口关闭事件，清理资源"""
+        # 等待解析线程结束
+        if self.parse_thread is not None and self.parse_thread.isRunning():
+            self.parse_thread.quit()
+            self.parse_thread.wait(2000)  # 最多等待2秒
+            if self.parse_thread.isRunning():
+                self.parse_thread.terminate()
+                self.parse_thread.wait()
+        
+        self.logger.info("程序正常退出")
+        super().closeEvent(event)
 
 
 def main():

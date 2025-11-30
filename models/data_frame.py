@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 class DataFrame:
     """数据帧"""
     frame_number: int  # 帧序号（从1开始）
-    start_position: int  # 在原始数据中的起始位置
-    end_position: int  # 在原始数据中的结束位置
+    start_position: int  # 在原始数据中的起始位置（第一个字节的索引）
+    end_position: int  # 在原始数据中的结束位置（最后一个字节的索引，包含）
     raw_data: bytes  # 原始字节数据
     
     # 解析后的字段数据
@@ -46,7 +46,9 @@ class DataFrame:
         self.actual_checksum = actual
         if not valid:
             self.has_error = True
-            self.error_message = f"校验失败：期望{expected:02X}，实际{actual:02X}"
+            # 根据值大小自动选择格式化宽度
+            width = max(2, (max(expected, actual).bit_length() + 3) // 4)
+            self.error_message = f"校验失败：期望{expected:0{width}X}，实际{actual:0{width}X}"
     
     def set_error(self, message: str):
         """设置错误"""

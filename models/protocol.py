@@ -9,12 +9,52 @@ from enum import Enum
 
 
 class ChecksumType(Enum):
-    """校验类型枚举"""
+    """校验类型枚举 - 支持多种校验算法"""
     NONE = "无校验"
+    
+    # 累加和校验
     SUM = "累加和"
+    SUM16 = "累加和16位"
+    
+    # 异或校验
     XOR = "异或校验"
-    CRC16 = "CRC16"
-    CRC32 = "CRC32"
+    XOR16 = "异或校验16位"
+    
+    # CRC-8 系列
+    CRC8 = "CRC-8"
+    CRC8_ITU = "CRC-8/ITU"
+    CRC8_ROHC = "CRC-8/ROHC"
+    CRC8_MAXIM = "CRC-8/MAXIM"
+    
+    # CRC-16 系列
+    CRC16_IBM = "CRC-16/IBM"
+    CRC16_MODBUS = "CRC-16/MODBUS"
+    CRC16_CCITT = "CRC-16/CCITT"
+    CRC16_CCITT_FALSE = "CRC-16/CCITT-FALSE"
+    CRC16_XMODEM = "CRC-16/XMODEM"
+    CRC16_X25 = "CRC-16/X25"
+    CRC16_DNP = "CRC-16/DNP"
+    CRC16_USB = "CRC-16/USB"
+    CRC16_MAXIM = "CRC-16/MAXIM"
+    CRC16 = "CRC16"  # 兼容旧版，等同于 MODBUS
+    
+    # CRC-32 系列
+    CRC32 = "CRC-32"
+    CRC32_MPEG2 = "CRC-32/MPEG-2"
+    CRC32_POSIX = "CRC-32/POSIX"
+    
+    # LRC (纵向冗余校验)
+    LRC = "LRC"
+    
+    # BCC (块校验码)
+    BCC = "BCC"
+    
+    # Fletcher 校验
+    FLETCHER16 = "Fletcher-16"
+    FLETCHER32 = "Fletcher-32"
+    
+    # Adler 校验
+    ADLER32 = "Adler-32"
 
 
 class ChecksumPosition(Enum):
@@ -79,6 +119,11 @@ class ChecksumConfig:
     checksum_length: int = 1  # 校验码字节数
     checksum_start: Optional[int] = None  # 校验计算起始位置（从0开始），None表示从帧头开始
     checksum_end: Optional[int] = None    # 校验计算结束位置（不包含），None表示到校验码前
+    
+    # 校验码字节序（大端/小端）
+    # 小端：低字节在前（如 MODBUS CRC16 结果 0x1234 存储为 34 12）
+    # 大端：高字节在前（如 XMODEM CRC16 结果 0x1234 存储为 12 34）
+    checksum_endianness: Endianness = Endianness.LITTLE  # 默认小端（MODBUS等常用协议）
     
     # 旧版兼容字段（如果新字段为None则使用这些）
     start_offset: int = 0  # 从帧头后第几个字节开始（0表示紧跟帧头）
@@ -180,11 +225,17 @@ class ProtocolConfig:
     
     def __post_init__(self):
         """数据验证"""
+        # 确保帧头帧尾有默认值
+        if not self.frame_header:
+            self.frame_header = "68"
+        if not self.frame_tail:
+            self.frame_tail = "16"
+        
         # 确保帧头帧尾是有效的十六进制
         try:
             int(self.frame_header, 16)
             int(self.frame_tail, 16)
-        except ValueError:
+        except (ValueError, TypeError):
             raise ValueError("帧头或帧尾不是有效的十六进制字符串")
     
     def add_field(self, field_def: FieldDefinition):
@@ -258,6 +309,8 @@ class ProtocolConfig:
             checksum_config['checksum_start'] = self.checksum_config.checksum_start
         if self.checksum_config.checksum_end is not None:
             checksum_config['checksum_end'] = self.checksum_config.checksum_end
+        # 添加校验码字节序
+        checksum_config['checksum_endianness'] = self.checksum_config.checksum_endianness.value
         
         result['checksum_config'] = checksum_config
         result['fields'] = [f.to_dict() for f in self.fields]
@@ -312,6 +365,7 @@ class ProtocolConfig:
             checksum_length=checksum_data.get('checksum_length', 1),
             checksum_start=checksum_data.get('checksum_start'),  # 新字段：校验计算起始位置
             checksum_end=checksum_data.get('checksum_end'),      # 新字段：校验计算结束位置
+            checksum_endianness=Endianness(checksum_data.get('checksum_endianness', 'little')),  # 校验码字节序
             start_offset=checksum_data.get('start_offset', 0),   # 旧版兼容
             end_offset=checksum_data.get('end_offset', -1)       # 旧版兼容
         )
