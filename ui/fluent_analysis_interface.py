@@ -112,7 +112,6 @@ class AnalysisInterface(QWidget):
         
         analyze_btn = PushButton(FIF.SEARCH, "开始分析")
         analyze_btn.clicked.connect(self.start_analysis)
-        analyze_btn.setToolTip("点击按钮开始分析，非实时分析")
         button_layout.addWidget(analyze_btn)
         
         clear_btn = PushButton(FIF.DELETE, "清空")
@@ -121,7 +120,6 @@ class AnalysisInterface(QWidget):
         
         # 分析历史
         history_btn = PushButton(FIF.HISTORY, "分析历史")
-        history_btn.setToolTip("查看历史分析记录")
         history_btn.clicked.connect(self.show_analysis_history)
         button_layout.addWidget(history_btn)
         

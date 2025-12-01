@@ -1,7 +1,7 @@
 {
-  "protocol_name": "威星浪花工装模块测试协议",
+  "protocol_name": "压力监测仪上位结果查询解析协议",
   "version": "1.0",
-  "description": "威星浪花工装模块测试协议",
+  "description": "压力监测仪上位结果查询解析协议",
   "frame_header": "68",
   "frame_tail": "16",
   "checksum_config": {
@@ -10,15 +10,15 @@
     "start_offset": 0,
     "end_offset": -1,
     "checksum_length": 1,
-    "checksum_position": 104,
     "checksum_start": 0,
-    "checksum_end": 104
+    "checksum_end": 0,
+    "checksum_endianness": "little"
   },
   "fields": [
     {
       "name": "设备测试标识",
       "byte_count": 1,
-      "field_type": "uint8",
+      "field_type": "bytes",
       "description": "",
       "order": 0,
       "length_field": null,
@@ -29,141 +29,133 @@
       "byte_count": 1,
       "field_type": "uint8",
       "description": "",
-      "order": 0,
+      "order": 1,
       "length_field": null,
       "locked": true
     },
     {
       "name": "工位号",
       "byte_count": 1,
-      "field_type": "uint8",
+      "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 2,
       "length_field": null,
       "locked": true
     },
     {
-      "name": "主电电压(供电电压)",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "little"
-    },
-    {
-      "name": "主电电压(协议获取)",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "little"
-    },
-    {
-      "name": "静态功耗",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "little"
-    },
-    {
-      "name": "满水功耗",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "big"
-    },
-    {
-      "name": "走水功耗",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "big"
-    },
-    {
-      "name": "备电/NB/扩频电压(供电电压)",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "little"
-    },
-    {
-      "name": "备电/NB/扩频电压(协议获取)",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "little"
-    },
-    {
-      "name": "备电/NB/扩频功耗",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "big"
-    },
-    {
-      "name": "蓝牙检测",
+      "name": "3.6V电压高位",
       "byte_count": 1,
-      "field_type": "uint8",
+      "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 3,
       "length_field": null,
       "locked": true
     },
     {
-      "name": "flash检测",
+      "name": "3.6V电压低位",
       "byte_count": 1,
-      "field_type": "uint8",
+      "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 4,
       "length_field": null,
       "locked": true
     },
     {
-      "name": "计量",
+      "name": "3.6V模组电压高位",
       "byte_count": 1,
-      "field_type": "uint8",
+      "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 5,
       "length_field": null,
       "locked": true
     },
     {
-      "name": "红外通信",
+      "name": "3.6V模组电压低位",
       "byte_count": 1,
-      "field_type": "uint8",
+      "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 6,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "3.6V电池电压高位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 7,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "3.6V电池电压低位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 8,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "3.3V_LDO高位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 9,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "3.3V_LDO低位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 10,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "静态功耗高位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 11,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "静态功耗低位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 12,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "运行功耗高位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 13,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "运行功耗低位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 14,
       "length_field": null,
       "locked": true
     },
     {
       "name": "IMEI号",
       "byte_count": 15,
-      "field_type": "string",
+      "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 15,
       "length_field": null,
       "locked": true,
       "endianness": "big"
@@ -171,9 +163,9 @@
     {
       "name": "IMSI号",
       "byte_count": 15,
-      "field_type": "string",
+      "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 16,
       "length_field": null,
       "locked": true,
       "endianness": "big"
@@ -181,121 +173,100 @@
     {
       "name": "ICCID号",
       "byte_count": 20,
-      "field_type": "string",
+      "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 17,
       "length_field": null,
       "locked": true,
       "endianness": "big"
     },
     {
-      "name": "CSQ",
+      "name": "Csq 信号强度配置",
       "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "阀门状态",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "阀门到位状态",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "EEPROM状态",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "GP30电压",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "little"
-    },
-    {
-      "name": "loraEUI",
-      "byte_count": 16,
       "field_type": "bytes",
       "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "big"
-    },
-    {
-      "name": "强磁检测",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
+      "order": 18,
       "length_field": null,
       "locked": true
     },
     {
-      "name": "开盖",
+      "name": "flash检测",
       "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "GPS模组状态",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "无磁模组信号强度",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "校验码字段",
-      "byte_count": 2,
       "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 19,
       "length_field": null,
-      "locked": true,
-      "endianness": "little"
+      "locked": true
     },
     {
-      "name": "程序版本号",
-      "byte_count": 2,
+      "name": "蓝牙检测",
+      "byte_count": 1,
       "field_type": "bytes",
       "description": "",
-      "order": 0,
+      "order": 20,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "板载压力传感器低位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 21,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "板载压力传感器高位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 22,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "外接压力传感器低位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 23,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "外接压力传感器高位",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 24,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "程序版本字节1",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 25,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "程序版本字节2",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 26,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "编译时间",
+      "byte_count": 6,
+      "field_type": "bytes",
+      "description": "",
+      "order": 27,
       "length_field": null,
       "locked": true,
       "endianness": "big"

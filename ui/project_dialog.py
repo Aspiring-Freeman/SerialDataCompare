@@ -72,7 +72,6 @@ class ProjectDialog(MessageBoxBase):
         folder_layout.addWidget(self.folder_edit)
         
         self.browse_btn = ToolButton(FIF.FOLDER)
-        self.browse_btn.setToolTip("浏览...")
         self.browse_btn.clicked.connect(self.browse_folder)
         folder_layout.addWidget(self.browse_btn)
         self.viewLayout.addLayout(folder_layout)
@@ -530,3 +529,72 @@ class ProjectHistoryDialog(MessageBoxBase):
             return dt.strftime("%Y-%m-%d %H:%M:%S")
         except:
             return dt_str
+
+
+class DeleteProtocolDialog(MessageBoxBase):
+    """删除协议确认对话框"""
+    
+    # 删除选项
+    REMOVE_FROM_PROJECT = 0  # 仅从项目中移除（保留文件）
+    DELETE_FILE = 1          # 永久删除文件
+    
+    def __init__(self, parent=None, protocol_name: str = "", protocol_path: str = ""):
+        super().__init__(parent)
+        self.protocol_name = protocol_name
+        self.protocol_path = protocol_path
+        self.delete_option = self.REMOVE_FROM_PROJECT
+        self.init_ui()
+    
+    def init_ui(self):
+        """初始化UI"""
+        self.titleLabel = SubtitleLabel("删除协议")
+        self.viewLayout.addWidget(self.titleLabel)
+        
+        # 警告图标和消息
+        msg_layout = QHBoxLayout()
+        
+        warning_label = BodyLabel("⚠️")
+        warning_label.setStyleSheet("font-size: 24px;")
+        msg_layout.addWidget(warning_label)
+        
+        msg = BodyLabel(f"确定要删除协议 \"{self.protocol_name}\" 吗？")
+        msg.setWordWrap(True)
+        msg_layout.addWidget(msg, 1)
+        
+        self.viewLayout.addLayout(msg_layout)
+        
+        # 删除选项
+        option_layout = QVBoxLayout()
+        option_label = BodyLabel("请选择删除方式:")
+        option_layout.addWidget(option_label)
+        
+        self.radio_remove_only = RadioButton("仅从项目中移除 (保留文件)")
+        self.radio_remove_only.setChecked(True)
+        self.radio_remove_only.clicked.connect(lambda: self.set_delete_option(self.REMOVE_FROM_PROJECT))
+        option_layout.addWidget(self.radio_remove_only)
+        
+        self.radio_delete_file = RadioButton("永久删除文件 ⚠️")
+        self.radio_delete_file.clicked.connect(lambda: self.set_delete_option(self.DELETE_FILE))
+        option_layout.addWidget(self.radio_delete_file)
+        
+        # 文件路径提示
+        path_hint = CaptionLabel(f"文件: {self.protocol_path}")
+        path_hint.setWordWrap(True)
+        option_layout.addWidget(path_hint)
+        
+        self.viewLayout.addLayout(option_layout)
+        
+        # 设置按钮
+        self.yesButton.setText("删除")
+        self.cancelButton.setText("取消")
+        
+        # 设置最小宽度
+        self.widget.setMinimumWidth(450)
+    
+    def set_delete_option(self, option: int):
+        """设置删除选项"""
+        self.delete_option = option
+    
+    def get_delete_option(self) -> int:
+        """获取删除选项"""
+        return self.delete_option

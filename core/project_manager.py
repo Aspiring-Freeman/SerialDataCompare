@@ -88,7 +88,13 @@ class Project:
         
         # 扫描文件夹（包括子文件夹）
         for root, dirs, files in os.walk(self.folder_path):
+            # 排除隐藏文件夹和 .removed 文件夹
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            
             for file in files:
+                # 排除隐藏文件
+                if file.startswith('.'):
+                    continue
                 if any(file.lower().endswith(ext) for ext in extensions):
                     file_path = os.path.join(root, file)
                     protocol_info = ProtocolInfo.from_file(file_path, self.folder_path)
@@ -148,6 +154,7 @@ class ProjectManager:
     
     def __init__(self):
         self.projects: Dict[str, Project] = {}  # 项目字典，key为项目ID
+        self._project_order: List[str] = []  # 项目顺序列表，存储项目ID
         self.current_project: Optional[Project] = None  # 当前选中的项目
         self.current_protocol_path: Optional[str] = None  # 当前选中的协议路径
         
@@ -173,6 +180,7 @@ class ProjectManager:
                 for proj_data in projects_data:
                     project = Project.from_dict(proj_data)
                     self.projects[project.id] = project
+                    self._project_order.append(project.id)
                 
                 # 恢复当前项目
                 current_id = data.get('current_project_id')
@@ -189,8 +197,18 @@ class ProjectManager:
     def save_config(self):
         """保存项目配置"""
         try:
+            # 按顺序保存项目
+            ordered_projects = []
+            for proj_id in self._project_order:
+                if proj_id in self.projects:
+                    ordered_projects.append(self.projects[proj_id].to_dict())
+            # 添加不在顺序列表中的项目
+            for proj_id, project in self.projects.items():
+                if proj_id not in self._project_order:
+                    ordered_projects.append(project.to_dict())
+            
             data = {
-                'projects': [p.to_dict() for p in self.projects.values()],
+                'projects': ordered_projects,
                 'current_project_id': self.current_project.id if self.current_project else None,
                 'current_protocol_path': self.current_protocol_path
             }
@@ -200,6 +218,10 @@ class ProjectManager:
                 
         except Exception as e:
             print(f"保存项目配置失败: {e}")
+    
+    def save_projects(self):
+        """保存项目配置（别名）"""
+        self.save_config()
     
     def generate_project_id(self) -> str:
         """生成唯一项目ID"""
@@ -220,6 +242,7 @@ class ProjectManager:
         
         # 添加到项目列表
         self.projects[project.id] = project
+        self._project_order.insert(0, project.id)  # 新项目放在最前面
         
         # 保存配置
         self.save_config()
@@ -252,6 +275,10 @@ class ProjectManager:
         
         del self.projects[project_id]
         
+        # 从顺序列表中移除
+        if project_id in self._project_order:
+            self._project_order.remove(project_id)
+        
         # 如果删除的是当前项目，清空当前项目
         if self.current_project and self.current_project.id == project_id:
             self.current_project = None
@@ -265,10 +292,43 @@ class ProjectManager:
         return self.projects.get(project_id)
     
     def get_all_projects(self) -> List[Project]:
-        """获取所有项目"""
-        # 按最后访问时间排序
-        return sorted(self.projects.values(), 
-                      key=lambda p: p.last_accessed, reverse=True)
+        """获取所有项目（按顺序返回）"""
+        result = []
+        # 按保存的顺序返回
+        for proj_id in self._project_order:
+            if proj_id in self.projects:
+                result.append(self.projects[proj_id])
+        # 添加不在顺序列表中的项目
+        for proj_id, project in self.projects.items():
+            if proj_id not in self._project_order:
+                result.append(project)
+        return result
+    
+    def reorder_project(self, project_id: str, target_index: int) -> bool:
+        """重新排序项目
+        
+        Args:
+            project_id: 要移动的项目ID
+            target_index: 目标位置索引，-1表示移到末尾
+            
+        Returns:
+            是否成功
+        """
+        if project_id not in self.projects:
+            return False
+        
+        # 从当前位置移除
+        if project_id in self._project_order:
+            self._project_order.remove(project_id)
+        
+        # 插入到新位置
+        if target_index < 0 or target_index >= len(self._project_order):
+            self._project_order.append(project_id)
+        else:
+            self._project_order.insert(target_index, project_id)
+        
+        self.save_config()
+        return True
     
     def select_project(self, project_id: str) -> Optional[Project]:
         """选择项目"""

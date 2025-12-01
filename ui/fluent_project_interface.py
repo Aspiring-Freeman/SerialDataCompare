@@ -146,7 +146,7 @@ class ProjectInterface(QWidget):
         if not project:
             return
         
-        dialog = ProjectDialog(self.window(), edit_project=project)
+        dialog = ProjectDialog(self.window(), project_manager=self.project_manager, edit_project_id=project_id)
         
         if dialog.exec():
             project_data = dialog.get_project_data()

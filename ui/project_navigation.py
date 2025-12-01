@@ -1,15 +1,19 @@
 # This Python file uses the following encoding: utf-8
 """
 项目导航界面 - 左侧项目和协议树形导航
+支持拖拽功能：
+- 拖拽协议到其他项目
+- 拖拽协议到文件夹
+- 拖拽调整项目顺序
 """
 import os
 import shutil
 import json
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, 
                                 QTreeWidgetItem, QFrame, QMenu, QApplication,
-                                QFileDialog)
-from PySide6.QtCore import Signal, Qt
-from PySide6.QtGui import QCursor
+                                QFileDialog, QAbstractItemView)
+from PySide6.QtCore import Signal, Qt, QMimeData, QByteArray
+from PySide6.QtGui import QCursor, QDrag, QDragEnterEvent, QDragMoveEvent, QDropEvent
 
 from qfluentwidgets import (PushButton, ToolButton, TitleLabel, BodyLabel,
                            SearchLineEdit, FluentIcon as FIF, 
@@ -18,7 +22,7 @@ from qfluentwidgets import (PushButton, ToolButton, TitleLabel, BodyLabel,
                            TreeWidget, Action, RoundMenu, MessageBox)
 
 from core.project_manager import ProjectManager, Project, ProtocolInfo
-from ui.project_dialog import RenameDialog, DeleteProjectDialog, ProjectHistoryDialog
+from ui.project_dialog import RenameDialog, DeleteProjectDialog, DeleteProtocolDialog, ProjectHistoryDialog
 
 
 class ProjectNavigationWidget(QWidget):
@@ -36,6 +40,8 @@ class ProjectNavigationWidget(QWidget):
         self.project_manager = project_manager
         self._clipboard_protocol = None  # 剪贴板：复制的协议路径
         self._clipboard_is_cut = False   # 是否是剪切操作
+        self._drag_item = None           # 当前拖拽的项目
+        self._drag_source_project_id = None  # 拖拽源项目ID
         self.init_ui()
         self.refresh_tree()
     
@@ -53,13 +59,11 @@ class ProjectNavigationWidget(QWidget):
         
         # 刷新按钮
         self.refresh_btn = ToolButton(FIF.SYNC)
-        self.refresh_btn.setToolTip("刷新项目列表")
         self.refresh_btn.clicked.connect(self.refresh_tree)
         title_layout.addWidget(self.refresh_btn)
         
         # 新建项目按钮
         self.add_btn = ToolButton(FIF.ADD)
-        self.add_btn.setToolTip("新建项目")
         self.add_btn.clicked.connect(lambda: self.request_new_project.emit())
         title_layout.addWidget(self.add_btn)
         
@@ -80,10 +84,24 @@ class ProjectNavigationWidget(QWidget):
         self.tree.customContextMenuRequested.connect(self.show_context_menu)
         self.tree.itemClicked.connect(self.on_item_clicked)
         self.tree.itemDoubleClicked.connect(self.on_item_double_clicked)
+        
+        # 启用拖拽功能
+        self.tree.setDragEnabled(True)
+        self.tree.setAcceptDrops(True)
+        self.tree.setDropIndicatorShown(True)
+        self.tree.setDragDropMode(QAbstractItemView.DragDrop)
+        self.tree.setDefaultDropAction(Qt.MoveAction)
+        
+        # 重写拖拽相关方法
+        self.tree.startDrag = self._start_drag
+        self.tree.dragEnterEvent = self._drag_enter_event
+        self.tree.dragMoveEvent = self._drag_move_event
+        self.tree.dropEvent = self._drop_event
+        
         layout.addWidget(self.tree, 1)
         
         # 底部提示
-        self.hint_label = CaptionLabel("双击协议加载，右键菜单管理项目")
+        self.hint_label = CaptionLabel("拖拽移动文件/夹 | Ctrl+拖拽复制 | 双击加载协议")
         self.hint_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.hint_label)
     
@@ -472,7 +490,12 @@ class ProjectNavigationWidget(QWidget):
                 new_path = os.path.join(parent_dir, new_name)
                 
                 try:
-                    os.rename(full_path, new_path)
+                    # 尝试直接重命名，失败则使用复制+删除
+                    try:
+                        os.rename(full_path, new_path)
+                    except OSError:
+                        shutil.copytree(full_path, new_path)
+                        shutil.rmtree(full_path)
                     project.scan_protocols()  # 重新扫描
                     self.refresh_tree()
                     
@@ -530,7 +553,12 @@ class ProjectNavigationWidget(QWidget):
                     return
                 
                 try:
-                    os.rename(protocol_path, new_path)
+                    # 尝试直接重命名，失败则使用复制+删除
+                    try:
+                        os.rename(protocol_path, new_path)
+                    except OSError:
+                        shutil.copy2(protocol_path, new_path)
+                        os.remove(protocol_path)
                     
                     # 更新协议文件内的名称字段
                     try:
@@ -574,39 +602,81 @@ class ProjectNavigationWidget(QWidget):
         
         file_name = os.path.basename(protocol_path)
         
-        # 确认对话框
-        box = MessageBox(
-            "删除协议",
-            f"确定要删除协议文件 \"{file_name}\" 吗？\n\n⚠️ 此操作不可恢复！",
-            self.window()
+        # 确认对话框 - 支持两种删除方式
+        dialog = DeleteProtocolDialog(
+            self.window(),
+            protocol_name=file_name,
+            protocol_path=protocol_path
         )
-        box.yesButton.setText("删除")
-        box.cancelButton.setText("取消")
         
-        if box.exec():
-            try:
-                os.remove(protocol_path)
-                self.refresh_tree()
-                
-                InfoBar.success(
-                    title="删除成功",
-                    content=f"协议文件 {file_name} 已删除",
-                    orient=Qt.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.TOP,
-                    duration=2000,
-                    parent=self.window()
-                )
-            except Exception as e:
-                InfoBar.error(
-                    title="删除失败",
-                    content=f"无法删除文件: {e}",
-                    orient=Qt.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.TOP,
-                    duration=3000,
-                    parent=self.window()
-                )
+        if dialog.exec():
+            delete_option = dialog.get_delete_option()
+            
+            if delete_option == DeleteProtocolDialog.DELETE_FILE:
+                # 永久删除文件
+                try:
+                    os.remove(protocol_path)
+                    self.refresh_tree()
+                    
+                    InfoBar.success(
+                        title="删除成功",
+                        content=f"协议文件 {file_name} 已永久删除",
+                        orient=Qt.Horizontal,
+                        isClosable=True,
+                        position=InfoBarPosition.TOP,
+                        duration=2000,
+                        parent=self.window()
+                    )
+                except Exception as e:
+                    InfoBar.error(
+                        title="删除失败",
+                        content=f"无法删除文件: {e}",
+                        orient=Qt.Horizontal,
+                        isClosable=True,
+                        position=InfoBarPosition.TOP,
+                        duration=3000,
+                        parent=self.window()
+                    )
+            else:
+                # 仅从项目中移除（将文件移动到项目文件夹外或标记为隐藏）
+                # 这里采用刷新树但不删除文件的方式，文件仍存在于磁盘
+                # 注：由于当前架构是基于文件夹扫描的，"移除"实际上需要移动文件
+                # 为简化实现，这里将文件移动到项目文件夹的 .removed 子文件夹
+                try:
+                    removed_dir = os.path.join(os.path.dirname(protocol_path), ".removed")
+                    os.makedirs(removed_dir, exist_ok=True)
+                    new_path = os.path.join(removed_dir, file_name)
+                    
+                    # 如果目标已存在，添加时间戳
+                    if os.path.exists(new_path):
+                        import time
+                        base, ext = os.path.splitext(file_name)
+                        new_path = os.path.join(removed_dir, f"{base}_{int(time.time())}{ext}")
+                    
+                    # 使用复制+删除以支持跨设备移动
+                    shutil.copy2(protocol_path, new_path)
+                    os.remove(protocol_path)
+                    self.refresh_tree()
+                    
+                    InfoBar.success(
+                        title="移除成功",
+                        content=f"协议 {file_name} 已从项目中移除\n文件已移至 .removed 文件夹",
+                        orient=Qt.Horizontal,
+                        isClosable=True,
+                        position=InfoBarPosition.TOP,
+                        duration=3000,
+                        parent=self.window()
+                    )
+                except Exception as e:
+                    InfoBar.error(
+                        title="移除失败",
+                        content=f"无法移除文件: {e}",
+                        orient=Qt.Horizontal,
+                        isClosable=True,
+                        position=InfoBarPosition.TOP,
+                        duration=3000,
+                        parent=self.window()
+                    )
 
     def delete_project_dialog(self, project_id: str):
         """显示删除项目对话框"""
@@ -764,8 +834,9 @@ class ProjectNavigationWidget(QWidget):
         
         try:
             if self._clipboard_is_cut:
-                # 剪切 - 移动文件
-                shutil.move(self._clipboard_protocol, target_path)
+                # 剪切 - 使用复制+删除以支持跨设备移动
+                shutil.copy2(self._clipboard_protocol, target_path)
+                os.remove(self._clipboard_protocol)
                 self._clipboard_protocol = None  # 清空剪贴板
                 
                 InfoBar.success(
@@ -823,4 +894,415 @@ class ProjectNavigationWidget(QWidget):
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except:
             pass  # 忽略更新名称失败的情况
+
+    # ==================== 拖拽功能 ====================
+    
+    def _start_drag(self, supported_actions):
+        """开始拖拽"""
+        item = self.tree.currentItem()
+        if not item:
+            return
+        
+        item_data = item.data(0, Qt.UserRole)
+        if not item_data:
+            return
+        
+        item_type = item_data.get('type')
+        
+        # 允许拖拽项目、文件夹和协议
+        if item_type not in ('project', 'protocol', 'folder'):
+            return
+        
+        self._drag_item = item
+        
+        # 记录源项目ID
+        if item_type == 'protocol' or item_type == 'folder':
+            # 查找所属的项目
+            parent = item.parent()
+            while parent:
+                parent_data = parent.data(0, Qt.UserRole)
+                if parent_data and parent_data.get('type') == 'project':
+                    self._drag_source_project_id = parent_data.get('id')
+                    break
+                parent = parent.parent()
+        elif item_type == 'project':
+            self._drag_source_project_id = item_data.get('id')
+        
+        # 创建拖拽对象
+        drag = QDrag(self.tree)
+        mime_data = QMimeData()
+        
+        # 将拖拽数据序列化
+        drag_data = {
+            'type': item_type,
+            'data': item_data,
+            'source_project_id': self._drag_source_project_id
+        }
+        mime_data.setData('application/x-project-navigation', 
+                         QByteArray(json.dumps(drag_data).encode('utf-8')))
+        mime_data.setText(item.text(0))
+        
+        drag.setMimeData(mime_data)
+        
+        # 设置拖拽图标提示
+        result = drag.exec(Qt.MoveAction | Qt.CopyAction)
+    
+    def _drag_enter_event(self, event: QDragEnterEvent):
+        """拖拽进入事件"""
+        if event.mimeData().hasFormat('application/x-project-navigation'):
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+    
+    def _drag_move_event(self, event: QDragMoveEvent):
+        """拖拽移动事件"""
+        if not event.mimeData().hasFormat('application/x-project-navigation'):
+            event.ignore()
+            return
+        
+        # 获取目标项目
+        target_item = self.tree.itemAt(event.position().toPoint())
+        
+        if not target_item:
+            # 拖到空白区域 - 对于项目，允许调整顺序
+            event.acceptProposedAction()
+            return
+        
+        target_data = target_item.data(0, Qt.UserRole)
+        if not target_data:
+            event.ignore()
+            return
+        
+        # 解析拖拽数据
+        try:
+            drag_data = json.loads(event.mimeData().data('application/x-project-navigation').data().decode('utf-8'))
+            drag_type = drag_data.get('type')
+        except:
+            event.ignore()
+            return
+        
+        target_type = target_data.get('type')
+        
+        # 判断是否允许放置
+        if drag_type == 'protocol':
+            # 协议可以放到：项目、文件夹、另一个协议（放到同级目录）
+            if target_type in ('project', 'folder', 'protocol'):
+                event.acceptProposedAction()
+            else:
+                event.ignore()
+        elif drag_type == 'folder':
+            # 文件夹可以放到：项目、另一个文件夹
+            if target_type in ('project', 'folder'):
+                event.acceptProposedAction()
+            else:
+                event.ignore()
+        elif drag_type == 'project':
+            # 项目可以放到：另一个项目（调整顺序）
+            if target_type == 'project':
+                event.acceptProposedAction()
+            else:
+                event.ignore()
+        else:
+            event.ignore()
+    
+    def _drop_event(self, event: QDropEvent):
+        """放置事件"""
+        if not event.mimeData().hasFormat('application/x-project-navigation'):
+            event.ignore()
+            return
+        
+        # 解析拖拽数据
+        try:
+            drag_data = json.loads(event.mimeData().data('application/x-project-navigation').data().decode('utf-8'))
+            drag_type = drag_data.get('type')
+            drag_item_data = drag_data.get('data')
+            source_project_id = drag_data.get('source_project_id')
+        except:
+            event.ignore()
+            return
+        
+        # 获取目标项目
+        target_item = self.tree.itemAt(event.position().toPoint())
+        
+        if drag_type == 'protocol':
+            self._handle_protocol_drop(drag_item_data, target_item, event, source_project_id)
+        elif drag_type == 'folder':
+            self._handle_folder_drop(drag_item_data, target_item, event, source_project_id)
+        elif drag_type == 'project':
+            self._handle_project_drop(drag_item_data, target_item, event)
+        
+        self._drag_item = None
+        self._drag_source_project_id = None
+    
+    def _get_target_info(self, target_item: QTreeWidgetItem) -> tuple:
+        """获取目标位置信息
+        
+        Returns:
+            (target_dir, target_project_id) 或 (None, None)
+        """
+        if not target_item:
+            return None, None
+        
+        target_data = target_item.data(0, Qt.UserRole)
+        if not target_data:
+            return None, None
+        
+        target_type = target_data.get('type')
+        target_dir = None
+        target_project_id = None
+        
+        if target_type == 'project':
+            target_project_id = target_data.get('id')
+            project = self.project_manager.get_project(target_project_id)
+            if project:
+                target_dir = project.folder_path
+        elif target_type == 'folder':
+            target_project_id = target_data.get('project_id')
+            project = self.project_manager.get_project(target_project_id)
+            if project:
+                relative_folder = target_data.get('path')
+                target_dir = os.path.join(project.folder_path, relative_folder)
+        elif target_type == 'protocol':
+            # 放到协议上 = 放到协议所在的目录
+            protocol_path = target_data.get('path')
+            if protocol_path:
+                target_dir = os.path.dirname(protocol_path)
+                # 找到所属项目
+                parent = target_item.parent()
+                while parent:
+                    parent_data = parent.data(0, Qt.UserRole)
+                    if parent_data and parent_data.get('type') == 'project':
+                        target_project_id = parent_data.get('id')
+                        break
+                    parent = parent.parent()
+        
+        return target_dir, target_project_id
+
+    def _handle_protocol_drop(self, drag_item_data: dict, target_item: QTreeWidgetItem, 
+                              event: QDropEvent, source_project_id: str):
+        """处理协议拖放"""
+        protocol_path = drag_item_data.get('path')
+        if not protocol_path or not os.path.exists(protocol_path):
+            event.ignore()
+            return
+        
+        target_dir, target_project_id = self._get_target_info(target_item)
+        
+        if not target_dir:
+            event.ignore()
+            return
+        
+        # 检查是否是同一个位置
+        src_dir = os.path.dirname(protocol_path)
+        if os.path.normpath(src_dir) == os.path.normpath(target_dir):
+            event.ignore()
+            return
+        
+        # 确定操作类型（按住Ctrl复制，否则移动）
+        is_copy = event.modifiers() & Qt.ControlModifier
+        
+        # 执行操作
+        try:
+            os.makedirs(target_dir, exist_ok=True)
+            
+            src_name = os.path.basename(protocol_path)
+            target_path = os.path.join(target_dir, src_name)
+            
+            # 如果目标文件已存在，添加后缀
+            if os.path.exists(target_path):
+                base, ext = os.path.splitext(src_name)
+                counter = 1
+                while os.path.exists(target_path):
+                    target_path = os.path.join(target_dir, f"{base}_副本{counter}{ext}")
+                    counter += 1
+            
+            if is_copy:
+                shutil.copy2(protocol_path, target_path)
+                self._update_protocol_name_in_file(target_path)
+                action_text = "复制"
+            else:
+                # 使用复制+删除以支持跨设备移动
+                shutil.copy2(protocol_path, target_path)
+                os.remove(protocol_path)
+                action_text = "移动"
+            
+            event.acceptProposedAction()
+            
+            # 刷新树
+            self.refresh_tree()
+            
+            InfoBar.success(
+                title=f"{action_text}成功",
+                content=f"协议已{action_text}到目标位置",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self.window()
+            )
+            
+        except Exception as e:
+            event.ignore()
+            InfoBar.error(
+                title="操作失败",
+                content=str(e),
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self.window()
+            )
+    
+    def _handle_folder_drop(self, drag_item_data: dict, target_item: QTreeWidgetItem, 
+                            event: QDropEvent, source_project_id: str):
+        """处理文件夹拖放"""
+        relative_path = drag_item_data.get('path')
+        drag_project_id = drag_item_data.get('project_id')
+        
+        if not relative_path or not drag_project_id:
+            event.ignore()
+            return
+        
+        source_project = self.project_manager.get_project(drag_project_id)
+        if not source_project:
+            event.ignore()
+            return
+        
+        src_folder = os.path.join(source_project.folder_path, relative_path)
+        if not os.path.exists(src_folder):
+            event.ignore()
+            return
+        
+        target_dir, target_project_id = self._get_target_info(target_item)
+        
+        if not target_dir:
+            event.ignore()
+            return
+        
+        # 不能移动到自己内部
+        if os.path.normpath(target_dir).startswith(os.path.normpath(src_folder)):
+            InfoBar.warning(
+                title="无法移动",
+                content="不能将文件夹移动到自身内部",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self.window()
+            )
+            event.ignore()
+            return
+        
+        # 检查是否是同一个位置
+        src_parent = os.path.dirname(src_folder)
+        if os.path.normpath(src_parent) == os.path.normpath(target_dir):
+            event.ignore()
+            return
+        
+        # 确定操作类型（按住Ctrl复制，否则移动）
+        is_copy = event.modifiers() & Qt.ControlModifier
+        
+        # 执行操作
+        try:
+            folder_name = os.path.basename(src_folder)
+            target_path = os.path.join(target_dir, folder_name)
+            
+            # 如果目标文件夹已存在，添加后缀
+            if os.path.exists(target_path):
+                counter = 1
+                base_name = folder_name
+                while os.path.exists(target_path):
+                    target_path = os.path.join(target_dir, f"{base_name}_副本{counter}")
+                    counter += 1
+                folder_name = os.path.basename(target_path)
+            
+            if is_copy:
+                shutil.copytree(src_folder, target_path)
+                action_text = "复制"
+            else:
+                # 使用 copytree + rmtree 替代 move，以处理跨设备移动
+                shutil.copytree(src_folder, target_path)
+                shutil.rmtree(src_folder)
+                action_text = "移动"
+            
+            event.acceptProposedAction()
+            
+            # 刷新树
+            self.refresh_tree()
+            
+            InfoBar.success(
+                title=f"{action_text}成功",
+                content=f"文件夹已{action_text}到目标位置",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self.window()
+            )
+            
+        except Exception as e:
+            event.ignore()
+            InfoBar.error(
+                title="操作失败",
+                content=str(e),
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self.window()
+            )
+    
+    def _handle_project_drop(self, drag_item_data: dict, target_item: QTreeWidgetItem, event: QDropEvent):
+        """处理项目拖放（调整顺序）"""
+        drag_project_id = drag_item_data.get('id')
+        if not drag_project_id:
+            event.ignore()
+            return
+        
+        # 计算目标位置
+        target_index = -1
+        
+        if target_item:
+            target_data = target_item.data(0, Qt.UserRole)
+            if target_data and target_data.get('type') == 'project':
+                target_project_id = target_data.get('id')
+                
+                # 不能放到自己身上
+                if target_project_id == drag_project_id:
+                    event.ignore()
+                    return
+                
+                # 获取目标项目的索引
+                projects = self.project_manager.get_all_projects()
+                for i, p in enumerate(projects):
+                    if p.id == target_project_id:
+                        target_index = i
+                        break
+        
+        # 调整项目顺序
+        if self.project_manager.reorder_project(drag_project_id, target_index):
+            event.acceptProposedAction()
+            self.refresh_tree()
+            
+            InfoBar.success(
+                title="调整成功",
+                content="项目顺序已更新",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self.window()
+            )
+        else:
+            event.ignore()
+    
+    def select_project_by_id(self, project_id: str):
+        """根据项目ID选中项目"""
+        for i in range(self.tree.topLevelItemCount()):
+            item = self.tree.topLevelItem(i)
+            item_data = item.data(0, Qt.UserRole)
+            if item_data and item_data.get('type') == 'project' and item_data.get('id') == project_id:
+                self.tree.setCurrentItem(item)
+                item.setExpanded(True)
+                break
 

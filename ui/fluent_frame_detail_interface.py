@@ -269,8 +269,8 @@ class FrameDetailInterface(QWidget):
         data_length = len(frame.raw_data)
         self.length_value.setText(f"{data_length} 字节")
         self.start_value.setText(f"0x{frame.start_position:04X} ({frame.start_position})")
-        # 结束位置应该是最后一个字节的位置（不包含）
-        self.end_value.setText(f"0x{frame.end_position-1:04X} ({frame.end_position-1})")
+        # 结束位置是最后一个字节的索引（包含）
+        self.end_value.setText(f"0x{frame.end_position:04X} ({frame.end_position})")
         
         # 更新原始数据（格式化为每行16字节）
         formatted_hex = self._format_hex_data(raw_hex)

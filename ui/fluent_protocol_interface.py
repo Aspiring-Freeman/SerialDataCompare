@@ -124,13 +124,11 @@ class ProtocolInterface(QWidget):
         
         # 全部锁定按钮
         lock_all_btn = PushButton(FIF.ACCEPT, "全部锁定")
-        lock_all_btn.setToolTip("锁定所有字段，防止意外修改")
         lock_all_btn.clicked.connect(self.lock_all_fields)
         title_layout.addWidget(lock_all_btn)
         
         # 全部解锁按钮
         unlock_all_btn = PushButton(FIF.CANCEL, "全部解锁")
-        unlock_all_btn.setToolTip("解锁所有字段，允许编辑")
         unlock_all_btn.clicked.connect(self.unlock_all_fields)
         title_layout.addWidget(unlock_all_btn)
         
@@ -329,13 +327,11 @@ class ProtocolInterface(QWidget):
         
         # 应用协议（使当前配置生效）
         apply_btn = PushButton(FIF.ACCEPT, "应用协议")
-        apply_btn.setToolTip("将当前协议配置应用到分析，无需保存文件")
         apply_btn.clicked.connect(self.apply_protocol)
         button_layout.addWidget(apply_btn)
         
         # 协议历史
         history_btn = PushButton(FIF.HISTORY, "协议历史")
-        history_btn.setToolTip("查看最近使用的协议配置")
         history_btn.clicked.connect(self.show_protocol_history)
         button_layout.addWidget(history_btn)
         
@@ -421,7 +417,6 @@ class ProtocolInterface(QWidget):
         # 锁定按钮
         lock_btn = PushButton("🔓 解锁")
         lock_btn.setFixedWidth(80)
-        lock_btn.setToolTip("当前字段未锁定，点击锁定以防止意外修改")
         
         # 锁定状态存储（使用列表避免闭包问题）
         lock_state = [False]
@@ -432,7 +427,6 @@ class ProtocolInterface(QWidget):
                 state[0] = not state[0]
                 if state[0]:
                     btn.setText("🔒 已锁定")
-                    btn.setToolTip("当前字段已锁定，点击解锁以允许编辑")
                     n_edit.setEnabled(False)
                     t_combo.setEnabled(False)
                     s_spin.setEnabled(False)
@@ -440,7 +434,6 @@ class ProtocolInterface(QWidget):
                     e_combo.setEnabled(False)
                 else:
                     btn.setText("🔓 解锁")
-                    btn.setToolTip("当前字段未锁定，点击锁定以防止意外修改")
                     n_edit.setEnabled(True)
                     t_combo.setEnabled(True)
                     s_spin.setEnabled(True)
@@ -1458,7 +1451,6 @@ class ProtocolInterface(QWidget):
             # 锁定按钮
             lock_btn = PushButton("🔓 解锁")
             lock_btn.setFixedWidth(80)
-            lock_btn.setToolTip("当前字段未锁定，点击锁定以防止意外修改")
             
             # 锁定状态存储（从配置中恢复，使用列表避免闭包问题）
             initial_locked = field_config.locked if hasattr(field_config, 'locked') else False
@@ -1470,7 +1462,6 @@ class ProtocolInterface(QWidget):
                     state[0] = not state[0]
                     if state[0]:
                         btn.setText("🔒 已锁定")
-                        btn.setToolTip("当前字段已锁定，点击解锁以允许编辑")
                         n_edit.setEnabled(False)
                         t_combo.setEnabled(False)
                         s_spin.setEnabled(False)
@@ -1478,7 +1469,6 @@ class ProtocolInterface(QWidget):
                         e_combo.setEnabled(False)
                     else:
                         btn.setText("🔓 解锁")
-                        btn.setToolTip("当前字段未锁定，点击锁定以防止意外修改")
                         n_edit.setEnabled(True)
                         t_combo.setEnabled(True)
                         s_spin.setEnabled(True)
@@ -1501,7 +1491,6 @@ class ProtocolInterface(QWidget):
             # 如果字段已锁定，应用锁定状态
             if initial_locked:
                 lock_btn.setText("🔒 已锁定")
-                lock_btn.setToolTip("当前字段已锁定，点击解锁以允许编辑")
                 name_edit.setEnabled(False)
                 type_combo.setEnabled(False)
                 start_spin.setEnabled(False)
