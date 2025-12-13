@@ -1,0 +1,273 @@
+{
+  "protocol_name": "取水机上位机通讯协议",
+  "version": "1.0",
+  "description": "示例：68 AD 53 01 BB 07 6C 07 8C 09 8C 09 01 01 38 36 30 35 31 32 30 37 37 34 37 34 37 34 33 34 36 30 32 34 30 34 39 30 34 35 32 32 37 37 38 39 38 36 30 38 35 39 31 31 32 35 44 31 33 35 32 32 37 37 1E 01 01 00 00 03 01 01 01 01 01 01 01 01 40 01 01 7D 16",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1,
+    "checksum_position": 81,
+    "checksum_start": 0,
+    "checksum_end": 81,
+    "checksum_endianness": "little"
+  },
+  "fields": [
+    {
+      "name": "设备测试标识",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "整包长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "工位号",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "19V电压(供电电压)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "主电电压(协议获取)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "静态功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "运行功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "蓝牙模块",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "flash检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "IMEI号",
+      "byte_count": 15,
+      "field_type": "string",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "IMSI号",
+      "byte_count": 15,
+      "field_type": "string",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "ICCID号",
+      "byte_count": 20,
+      "field_type": "string",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "CSQ",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "阀门状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "阀门到位状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "校验码",
+      "byte_count": 2,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "程序版本号",
+      "byte_count": 2,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "倾角模块状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "LCD 通讯状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "KEY_ON  按键状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "KEY_OFF  按键状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "DOOR_EN  状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "电 源 管 理 芯 片  状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "压 力 传 感 器 电压",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "485 通讯状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "NFC 通讯状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "校验码字段",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    }
+  ]
+}

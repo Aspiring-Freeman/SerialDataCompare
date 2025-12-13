@@ -1,7 +1,7 @@
 {
-  "protocol_name": "国内水表设置阀门协议",
+  "protocol_name": "国内超声波水表设置阀门协议",
   "version": "1.0",
-  "description": "国内水表设置阀门协议",
+  "description": "国内超声波水表设置阀门协议\n示例：68 00 00 00 00 00 00 00 0A 04 18 00 36 20 00 02 01 0F 00 01 00 6C B1 16\n响应：68 00 00 00 00 00 00 00 0A 84 1A 00 36 20 00 00 00 02 01 0F 00 01 00 10 1F 16",
   "frame_header": "68",
   "frame_tail": "16",
   "checksum_config": {
@@ -83,6 +83,24 @@
       "locked": true
     },
     {
+      "name": "数据域:管道类型",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "数据域:换能器类型",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
       "name": "数据域:管径",
       "byte_count": 2,
       "field_type": "bytes",
@@ -93,7 +111,7 @@
       "endianness": "little"
     },
     {
-      "name": "数据域:几线阀",
+      "name": "数据域:阀门类型",
       "byte_count": 1,
       "field_type": "uint8",
       "description": "",
@@ -102,23 +120,13 @@
       "locked": true
     },
     {
-      "name": "数据域:阀门超时时间",
+      "name": "数据域：模组类型",
       "byte_count": 1,
       "field_type": "uint8",
       "description": "",
       "order": 0,
       "length_field": null,
       "locked": true
-    },
-    {
-      "name": "数据域:阀门最大电流",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "endianness": "little"
     },
     {
       "name": "CRC校验码",
