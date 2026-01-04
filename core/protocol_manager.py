@@ -6,9 +6,11 @@
 
 import json
 import os
-from typing import Optional
+from typing import Optional, Tuple
 from models import ProtocolConfig
 from core.protocol_converter import ProtocolConverter
+from core.protocol_validator import ProtocolValidator
+from utils import atomic_write_json
 
 
 class ProtocolManager:
@@ -17,7 +19,7 @@ class ProtocolManager:
     @staticmethod
     def save_protocol(protocol: ProtocolConfig, file_path: str) -> bool:
         """
-        保存协议配置到文件
+        保存协议配置到文件 - 使用原子写入确保数据安全
         
         Args:
             protocol: 协议配置对象
@@ -28,31 +30,40 @@ class ProtocolManager:
         """
         try:
             data = protocol.to_dict()
-            with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-            return True
+            # 添加schema版本
+            data['schema_version'] = ProtocolValidator.CURRENT_SCHEMA_VERSION
+            return atomic_write_json(file_path, data)
         except Exception as e:
             print(f"保存协议失败: {e}")
             return False
     
     @staticmethod
-    def load_protocol(file_path: str) -> Optional[ProtocolConfig]:
+    def load_protocol(file_path: str, validate: bool = True) -> Tuple[Optional[ProtocolConfig], str]:
         """
         从文件加载协议配置（自动检测并转换格式）
         
         Args:
             file_path: 文件路径
+            validate: 是否进行JSON Schema验证
             
         Returns:
-            协议配置对象，如果失败返回None
+            (协议配置对象, 警告/错误消息) 元组
         """
         try:
             if not os.path.exists(file_path):
-                print(f"文件不存在: {file_path}")
-                return None
+                return None, f"文件不存在: {file_path}"
             
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+            
+            # JSON Schema验证
+            warning_msg = ""
+            if validate:
+                is_valid, errors = ProtocolValidator.validate(data)
+                if not is_valid:
+                    # 记录验证错误但不阻止加载
+                    warning_msg = ProtocolValidator.format_errors(errors)
+                    print(f"协议验证警告:\n{warning_msg}")
             
             # 使用转换器自动检测并转换格式
             protocol = ProtocolConverter.validate_and_convert(data)
@@ -61,12 +72,28 @@ class ProtocolManager:
             if protocol:
                 protocol.file_path = os.path.abspath(file_path)
             
-            return protocol
+            return protocol, warning_msg
+        except json.JSONDecodeError as e:
+            return None, f"JSON格式错误: {str(e)}"
         except Exception as e:
             print(f"加载协议失败: {e}")
             import traceback
             traceback.print_exc()
-            return None
+            return None, f"加载失败: {str(e)}"
+    
+    @staticmethod
+    def load_protocol_simple(file_path: str) -> Optional[ProtocolConfig]:
+        """
+        简化的协议加载方法（向后兼容）
+        
+        Args:
+            file_path: 文件路径
+            
+        Returns:
+            协议配置对象，如果失败返回None
+        """
+        protocol, _ = ProtocolManager.load_protocol(file_path, validate=True)
+        return protocol
     
     @staticmethod
     def validate_protocol(protocol: ProtocolConfig) -> tuple[bool, str]:

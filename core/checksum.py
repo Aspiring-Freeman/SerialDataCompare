@@ -236,12 +236,100 @@ class ChecksumCalculator:
             
             # Adler
             ChecksumType.ADLER32: cls._calculate_adler32,
+            
+            # 自定义 CRC（需要通过 calculate_custom_crc 调用）
+            ChecksumType.CRC_CUSTOM: None,
         }
         return calculators.get(checksum_type)
     
     @classmethod
-    def get_checksum_length(cls, checksum_type: ChecksumType) -> int:
+    def calculate_custom_crc(cls, data: bytes, params) -> int:
+        """
+        使用自定义参数计算 CRC
+        
+        Args:
+            data: 要校验的数据
+            params: CRCParameters 对象，包含 poly, init, ref_in, ref_out, xor_out, width
+            
+        Returns:
+            CRC 校验值
+        """
+        poly = params.poly
+        init = params.init
+        ref_in = params.ref_in
+        ref_out = params.ref_out
+        xor_out = params.xor_out
+        width = params.width
+        
+        # 计算掩码
+        if width == 8:
+            mask = 0xFF
+        elif width == 16:
+            mask = 0xFFFF
+        elif width == 32:
+            mask = 0xFFFFFFFF
+        else:
+            mask = (1 << width) - 1
+        
+        crc = init & mask
+        
+        for byte in data:
+            if ref_in:
+                # 反转输入字节
+                byte = cls._reflect_byte(byte)
+            
+            if width == 8:
+                crc ^= byte
+                for _ in range(8):
+                    if crc & 0x80:
+                        crc = ((crc << 1) ^ poly) & mask
+                    else:
+                        crc = (crc << 1) & mask
+            elif width == 16:
+                crc ^= (byte << 8)
+                for _ in range(8):
+                    if crc & 0x8000:
+                        crc = ((crc << 1) ^ poly) & mask
+                    else:
+                        crc = (crc << 1) & mask
+            elif width == 32:
+                crc ^= (byte << 24)
+                for _ in range(8):
+                    if crc & 0x80000000:
+                        crc = ((crc << 1) ^ poly) & mask
+                    else:
+                        crc = (crc << 1) & mask
+        
+        if ref_out:
+            crc = cls._reflect_bits(crc, width)
+        
+        return (crc ^ xor_out) & mask
+    
+    @staticmethod
+    def _reflect_byte(byte: int) -> int:
+        """反转字节位序"""
+        result = 0
+        for i in range(8):
+            if byte & (1 << i):
+                result |= (1 << (7 - i))
+        return result
+    
+    @staticmethod
+    def _reflect_bits(value: int, width: int) -> int:
+        """反转指定宽度的位序"""
+        result = 0
+        for i in range(width):
+            if value & (1 << i):
+                result |= (1 << (width - 1 - i))
+        return result
+    
+    @classmethod
+    def get_checksum_length(cls, checksum_type: ChecksumType, crc_params=None) -> int:
         """获取校验码的字节长度"""
+        # 自定义 CRC 需要根据参数确定长度
+        if checksum_type == ChecksumType.CRC_CUSTOM and crc_params:
+            return (crc_params.width + 7) // 8
+        
         length_map = {
             ChecksumType.NONE: 0,
             ChecksumType.SUM: 1,
@@ -270,6 +358,7 @@ class ChecksumCalculator:
             ChecksumType.FLETCHER16: 2,
             ChecksumType.FLETCHER32: 4,
             ChecksumType.ADLER32: 4,
+            ChecksumType.CRC_CUSTOM: 2,  # 默认2字节
         }
         return length_map.get(checksum_type, 1)
     

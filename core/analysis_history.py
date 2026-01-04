@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime
 
+from utils import atomic_write_json
+
 
 class AnalysisHistory:
     """分析历史记录管理器"""
@@ -36,12 +38,9 @@ class AnalysisHistory:
             return []
     
     def _save_history(self):
-        """保存历史记录"""
-        try:
-            with open(self.history_file, 'w', encoding='utf-8') as f:
-                json.dump(self.history, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            print(f"保存分析历史记录失败: {e}")
+        """保存历史记录 - 使用原子写入确保数据安全"""
+        if not atomic_write_json(str(self.history_file), self.history):
+            print("保存分析历史记录失败")
     
     def add_analysis(self, protocol_name: str, input_data: str, 
                     total_frames: int, valid_frames: int, error_frames: int,

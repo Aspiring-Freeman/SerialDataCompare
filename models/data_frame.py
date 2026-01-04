@@ -20,6 +20,14 @@ class DataFrame:
     # 字段类型映射（字段名 -> 类型字符串）
     field_types: Dict[str, str] = field(default_factory=dict)
     
+    # ============ 新增：字段字节位置映射 ============
+    # {字段名: (帧内起始字节, 帧内结束字节)}
+    field_byte_positions: Dict[str, tuple] = field(default_factory=dict)
+    
+    # ============ 新增：字段缩放值映射 ============
+    # {字段名: 缩放后的格式化字符串，如 "25.5°C"}
+    field_scaled_values: Dict[str, str] = field(default_factory=dict)
+    
     # 校验信息
     checksum_valid: bool = True
     expected_checksum: Optional[int] = None
@@ -29,15 +37,51 @@ class DataFrame:
     has_error: bool = False
     error_message: str = ""
     
-    def add_field(self, field_name: str, value: Any, field_type: str = ""):
-        """添加解析后的字段"""
+    def add_field(self, field_name: str, value: Any, field_type: str = "", scaled_value: str = None):
+        """
+        添加解析后的字段
+        
+        Args:
+            field_name: 字段名称
+            value: 字段原始值
+            field_type: 字段类型
+            scaled_value: 缩放后的格式化值（可选，如 "25.5°C"）
+        """
         self.fields[field_name] = value
         if field_type:
             self.field_types[field_name] = field_type
+        if scaled_value is not None:
+            self.field_scaled_values[field_name] = scaled_value
+    
+    def get_field_scaled_value(self, field_name: str) -> Optional[str]:
+        """获取字段的缩放后值"""
+        return self.field_scaled_values.get(field_name)
     
     def get_field(self, field_name: str) -> Optional[Any]:
         """获取字段值"""
         return self.fields.get(field_name)
+    
+    def get_field_byte_position(self, field_name: str) -> Optional[tuple]:
+        """
+        获取字段在帧内的字节位置
+        
+        Returns:
+            (start, end) 元组，或 None 如果字段不存在
+        """
+        return self.field_byte_positions.get(field_name)
+    
+    def get_field_bytes(self, field_name: str) -> Optional[bytes]:
+        """
+        获取字段对应的原始字节
+        
+        Returns:
+            字段对应的字节数据，或 None 如果字段不存在
+        """
+        pos = self.get_field_byte_position(field_name)
+        if pos and len(pos) == 2:
+            start, end = pos
+            return self.raw_data[start:end]
+        return None
     
     def set_checksum_result(self, valid: bool, expected: int, actual: int):
         """设置校验结果"""
@@ -91,6 +135,9 @@ class DataFrame:
             lines.append("  字段解析")
             lines.append("-" * 80)
             for name, value in self.fields.items():
+                # 检查是否有缩放后的值
+                scaled = self.field_scaled_values.get(name)
+                
                 if isinstance(value, bytes):
                     value_str = ' '.join(f'{b:02X}' for b in value)
                     # 尝试解码为ASCII字符串
@@ -103,11 +150,21 @@ class DataFrame:
                     except:
                         lines.append(f"  {name:<30s}: {value_str}")
                 elif isinstance(value, int):
-                    lines.append(f"  {name:<30s}: {value:<10d} (0x{value:X})")
+                    if scaled:
+                        # 显示原始值和缩放后的值
+                        lines.append(f"  {name:<30s}: {value:<10d} (0x{value:X}) → {scaled}")
+                    else:
+                        lines.append(f"  {name:<30s}: {value:<10d} (0x{value:X})")
                 elif isinstance(value, float):
-                    lines.append(f"  {name:<30s}: {value:.4f}")
+                    if scaled:
+                        lines.append(f"  {name:<30s}: {value:.4f} → {scaled}")
+                    else:
+                        lines.append(f"  {name:<30s}: {value:.4f}")
                 else:
-                    lines.append(f"  {name:<30s}: {value}")
+                    if scaled:
+                        lines.append(f"  {name:<30s}: {value} → {scaled}")
+                    else:
+                        lines.append(f"  {name:<30s}: {value}")
             lines.append("")
         
         lines.append("-" * 80)

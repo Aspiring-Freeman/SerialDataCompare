@@ -1,0 +1,323 @@
+{
+  "protocol_name": "威星户用超声检测工装模块测试协议",
+  "version": "1.0",
+  "description": "威星户用超声检测工装模块测试协议,包含温度检测，协议有气压检测，但是我们不用\n示例：68 AA 19 03 05 02 50 00 00 78 01 02 00 0F 00 00 01 00 00 00 14 E6 00 0A 16",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1,
+    "checksum_position": 106,
+    "checksum_start": 0,
+    "checksum_end": 106,
+    "checksum_endianness": "little"
+  },
+  "fields": [
+    {
+      "name": "设备测试标识",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "整包长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "工位号",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "主电电压(供电电压)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "主电电压(协议获取)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "静态功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "满水功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "走水功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "备电/NB/扩频电压(供电电压)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "备电/NB/扩频电压(协议获取)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "备电/NB/扩频功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "蓝牙检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "flash检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "计量",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "红外通信",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "IMEI号",
+      "byte_count": 15,
+      "field_type": "string",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "IMSI号",
+      "byte_count": 15,
+      "field_type": "string",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "ICCID号",
+      "byte_count": 20,
+      "field_type": "string",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "CSQ",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "阀门状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "阀门到位状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "EEPROM状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "GP30电压",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "loraEUI",
+      "byte_count": 16,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "强磁检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "开盖",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "GPS模组状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "无磁模组信号强度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "校验码字段",
+      "byte_count": 2,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "little"
+    },
+    {
+      "name": "程序版本号",
+      "byte_count": 2,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "水温检测 ",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "压力检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    }
+  ]
+}

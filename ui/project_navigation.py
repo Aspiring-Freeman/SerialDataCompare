@@ -104,9 +104,61 @@ class ProjectNavigationWidget(QWidget):
         self.hint_label = CaptionLabel("拖拽移动文件/夹 | Ctrl+拖拽复制 | 双击加载协议")
         self.hint_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.hint_label)
+        
+        # 记录展开状态的字典
+        self._expanded_states = {}
+    
+    def _save_expanded_states(self):
+        """保存当前的展开状态"""
+        self._expanded_states = {}
+        
+        def save_item_state(item):
+            data = item.data(0, Qt.UserRole)
+            if data:
+                # 使用类型和ID/路径作为唯一标识
+                if data.get('type') == 'project':
+                    key = f"project:{data.get('id')}"
+                elif data.get('type') == 'folder':
+                    key = f"folder:{data.get('project_id')}:{data.get('path')}"
+                else:
+                    return
+                self._expanded_states[key] = item.isExpanded()
+            
+            for i in range(item.childCount()):
+                save_item_state(item.child(i))
+        
+        for i in range(self.tree.topLevelItemCount()):
+            save_item_state(self.tree.topLevelItem(i))
+    
+    def _restore_expanded_states(self):
+        """恢复之前的展开状态"""
+        if not self._expanded_states:
+            return
+        
+        def restore_item_state(item):
+            data = item.data(0, Qt.UserRole)
+            if data:
+                if data.get('type') == 'project':
+                    key = f"project:{data.get('id')}"
+                elif data.get('type') == 'folder':
+                    key = f"folder:{data.get('project_id')}:{data.get('path')}"
+                else:
+                    return
+                
+                if key in self._expanded_states:
+                    item.setExpanded(self._expanded_states[key])
+            
+            for i in range(item.childCount()):
+                restore_item_state(item.child(i))
+        
+        for i in range(self.tree.topLevelItemCount()):
+            restore_item_state(self.tree.topLevelItem(i))
     
     def refresh_tree(self):
         """刷新项目树"""
+        # 保存当前展开状态
+        self._save_expanded_states()
+        
         self.tree.clear()
         
         projects = self.project_manager.get_all_projects()
@@ -127,7 +179,9 @@ class ProjectNavigationWidget(QWidget):
             project_item.setText(0, f"📁 {project.name}")
             # 不设置 tooltip，避免黑框问题
             project_item.setData(0, Qt.UserRole, {'type': 'project', 'id': project.id})
-            project_item.setExpanded(True)
+            # 默认展开（如果没有保存的状态）
+            is_new = f"project:{project.id}" not in self._expanded_states
+            project_item.setExpanded(is_new or self._expanded_states.get(f"project:{project.id}", True))
             
             # 获取按文件夹分组的协议结构
             folder_structure = project.get_folder_structure()
@@ -166,7 +220,10 @@ class ProjectNavigationWidget(QWidget):
                             folder_item.setText(0, f"📂 {part}")
                             # 不设置 tooltip，避免黑框问题
                             folder_item.setData(0, Qt.UserRole, {'type': 'folder', 'path': current_path, 'project_id': project.id})
-                            folder_item.setExpanded(True)
+                            # 默认展开（如果没有保存的状态）
+                            folder_key = f"folder:{project.id}:{current_path}"
+                            is_new_folder = folder_key not in self._expanded_states
+                            folder_item.setExpanded(is_new_folder or self._expanded_states.get(folder_key, True))
                             folder_items[current_path] = folder_item
                         
                         parent_item = folder_items[current_path]

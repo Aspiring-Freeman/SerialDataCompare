@@ -1,0 +1,56 @@
+{
+  "protocol_name": "第一步：获取Lora Dev_EUI指令",
+  "version": "1.0",
+  "description": "开始测试指令\n0工位:68 BA 06 00 28 16\n响应:  68 BB 06 00 29 16\n目的：让工装和海外水表mcu通信，获取利尔达lora模块Dev EUI，上位机会从数据库搜索这个，找到提前配置好的Appkey和AppEui，通过第三步的开始测试指令，下发这两个参数给工装，让工装将这两个参数写入模块，模块才能和网关正常通讯",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1,
+    "checksum_position": 4,
+    "checksum_start": 0,
+    "checksum_end": 4,
+    "checksum_endianness": "big"
+  },
+  "fields": [
+    {
+      "name": "数据标识(BA)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "整包长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "工位",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "累加和校验",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    }
+  ]
+}

@@ -34,6 +34,7 @@ from ui.fluent_frame_detail_interface import FrameDetailInterface
 from ui.fluent_log_interface import LogInterface
 from ui.fluent_settings_interface import SettingsInterface
 from ui.fluent_project_interface import ProjectInterface
+from ui.fluent_tools_interface import ToolsInterface
 
 
 class ParseThread(QThread):
@@ -45,13 +46,25 @@ class ParseThread(QThread):
         super().__init__()
         self.parser = parser
         self.hex_string = hex_string
+        self._abort = False
+    
+    def abort(self):
+        """请求中止解析"""
+        self._abort = True
+    
+    def is_aborted(self):
+        """检查是否已请求中止"""
+        return self._abort
     
     def run(self):
         try:
+            # 传递中止检查回调给解析器（如果解析器支持）
             result = self.parser.parse(self.hex_string)
-            self.finished.emit(result)
+            if not self._abort:
+                self.finished.emit(result)
         except Exception as e:
-            self.error.emit(str(e))
+            if not self._abort:
+                self.error.emit(str(e))
 
 
 class MainWindow(FluentWindow):
@@ -87,7 +100,6 @@ class MainWindow(FluentWindow):
     
     def init_window(self):
         """初始化窗口"""
-        self.resize(1600, 1000)
         self.setWindowTitle('串口数据分析工具 v2.0 - Fluent Design')
         
         # 设置默认主题 - 使用 LIGHT 而不是 AUTO 避免初始化问题
@@ -95,6 +107,9 @@ class MainWindow(FluentWindow):
         
         # 确保窗口样式正确应用
         self.setStyleSheet("background-color: transparent;")
+        
+        # 启动时最大化窗口
+        self.showMaximized()
     
     def init_navigation(self):
         """初始化导航栏"""
@@ -105,6 +120,7 @@ class MainWindow(FluentWindow):
         self.frame_detail_interface = FrameDetailInterface(self)
         self.log_interface = LogInterface(self)
         self.settings_interface = SettingsInterface(self)
+        self.tools_interface = ToolsInterface(self)
         
         # 连接信号
         self.setup_connections()
@@ -145,6 +161,13 @@ class MainWindow(FluentWindow):
             NavigationItemPosition.TOP
         )
         
+        self.addSubInterface(
+            self.tools_interface,
+            FIF.APPLICATION,
+            '小工具',
+            NavigationItemPosition.TOP
+        )
+        
         # 设置界面添加到底部
         self.addSubInterface(
             self.settings_interface,
@@ -181,10 +204,26 @@ class MainWindow(FluentWindow):
             if not os.path.exists(protocol_path):
                 raise FileNotFoundError(f"协议文件不存在: {protocol_path}")
             
-            # 加载协议
-            protocol = ProtocolManager.load_protocol(protocol_path)
+            # 加载协议（带验证）
+            protocol, warning_msg = ProtocolManager.load_protocol(protocol_path, validate=True)
             
-            # 更新协议配置界面
+            if protocol is None:
+                raise ValueError(warning_msg or "加载协议失败")
+            
+            # 如果有验证警告，显示提示
+            if warning_msg:
+                InfoBar.warning(
+                    title="协议验证警告",
+                    content=warning_msg[:100] + "..." if len(warning_msg) > 100 else warning_msg,
+                    orient=Qt.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=5000,
+                    parent=self
+                )
+            
+            # 更新协议配置界面，同时设置当前文件路径
+            self.protocol_interface.set_current_file_path(protocol_path)
             self.protocol_interface.load_protocol_data(protocol)
             
             # 切换到协议配置界面
@@ -213,7 +252,7 @@ class MainWindow(FluentWindow):
         example_path = os.path.join(os.path.dirname(__file__), 'protocol_example.json')
         if os.path.exists(example_path):
             try:
-                self.current_protocol = ProtocolManager.load_protocol(example_path)
+                self.current_protocol = ProtocolManager.load_protocol_simple(example_path)
                 self.logger.info(f"已加载示例协议：{example_path}")
                 # 更新界面
                 self.protocol_interface.load_protocol_data(self.current_protocol)
@@ -289,7 +328,23 @@ class MainWindow(FluentWindow):
             self.logger.error("分析失败: 未配置协议")
             return
         
+        # 检查是否有正在运行的解析线程
+        if self.parse_thread is not None and self.parse_thread.isRunning():
+            InfoBar.warning(
+                title='警告',
+                content='解析正在进行中，请等待完成',
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+            return
+        
         self.logger.info(f"开始分析数据: {hex_data[:50]}...")
+        
+        # 禁用分析按钮，防止重复点击
+        self.analysis_interface.set_analyzing(True)
         
         # 创建解析器
         parser = DataParser(self.current_protocol)
@@ -314,6 +369,9 @@ class MainWindow(FluentWindow):
     def on_parse_finished(self, result: ParseResult):
         """解析完成"""
         self.parse_result = result
+        
+        # 重新启用分析按钮
+        self.analysis_interface.set_analyzing(False)
         
         # 更新分析界面
         self.analysis_interface.show_result(result)
@@ -359,6 +417,9 @@ class MainWindow(FluentWindow):
     
     def on_parse_error(self, error: str):
         """解析错误"""
+        # 重新启用分析按钮
+        self.analysis_interface.set_analyzing(False)
+        
         InfoBar.error(
             title='解析错误',
             content=error,
@@ -412,6 +473,10 @@ def main():
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
+    
+    # 设置输入法环境变量（支持fcitx等中文输入法）
+    # 这需要在创建QApplication之前设置
+    os.environ.setdefault('QT_IM_MODULE', 'fcitx')
     
     app = QApplication(sys.argv)
     

@@ -1,0 +1,74 @@
+{
+  "protocol_name": "工装日志和透传开启关闭指令",
+  "version": "1.0",
+  "description": "工装日志和透传开启关闭指令\n5工位关闭：68 AE 08 05 00 00 23 16\n5工位开启：68 AE 08 05 01 00 24 16\n响应是68 AF 08 05 01 00 25 16这种类型，主要依靠标志AF\n",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1,
+    "checksum_position": 6,
+    "checksum_start": 0,
+    "checksum_end": 6,
+    "checksum_endianness": "big"
+  },
+  "fields": [
+    {
+      "name": "设置日志和透传的指示位置",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "整包长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "工位",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "Debug是否开启",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "透传是否开启",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "累加和校验",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    }
+  ]
+}

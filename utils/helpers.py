@@ -4,8 +4,108 @@
 """
 
 import csv
-from typing import List
+import os
+import tempfile
+import json
+from typing import List, Any, Callable
 from models import ParseResult, DataFrame
+
+
+def atomic_write_json(file_path: str, data: Any, indent: int = 2) -> bool:
+    """
+    原子写入 JSON 文件
+    
+    使用临时文件 + 重命名模式确保写入安全：
+    1. 先写入临时文件
+    2. 确保临时文件写入成功
+    3. 原子性地将临时文件重命名为目标文件
+    
+    这样即使程序崩溃或断电，也不会损坏原有文件。
+    
+    Args:
+        file_path: 目标文件路径
+        data: 要写入的数据
+        indent: JSON 缩进
+        
+    Returns:
+        是否成功
+    """
+    try:
+        # 确保目录存在
+        dir_path = os.path.dirname(file_path)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
+        
+        # 创建临时文件（在同一目录以确保原子重命名）
+        fd, temp_path = tempfile.mkstemp(
+            suffix='.tmp',
+            prefix='atomic_',
+            dir=dir_path if dir_path else '.'
+        )
+        
+        try:
+            # 写入临时文件
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=indent)
+            
+            # 原子性重命名（在同一文件系统上是原子操作）
+            os.replace(temp_path, file_path)
+            return True
+            
+        except Exception:
+            # 清理临时文件
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+            raise
+            
+    except Exception as e:
+        print(f"原子写入失败: {e}")
+        return False
+
+
+def atomic_write_text(file_path: str, content: str, encoding: str = 'utf-8') -> bool:
+    """
+    原子写入文本文件
+    
+    Args:
+        file_path: 目标文件路径
+        content: 要写入的文本内容
+        encoding: 文件编码
+        
+    Returns:
+        是否成功
+    """
+    try:
+        # 确保目录存在
+        dir_path = os.path.dirname(file_path)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
+        
+        # 创建临时文件
+        fd, temp_path = tempfile.mkstemp(
+            suffix='.tmp',
+            prefix='atomic_',
+            dir=dir_path if dir_path else '.'
+        )
+        
+        try:
+            # 写入临时文件
+            with os.fdopen(fd, 'w', encoding=encoding) as f:
+                f.write(content)
+            
+            # 原子性重命名
+            os.replace(temp_path, file_path)
+            return True
+            
+        except Exception:
+            # 清理临时文件
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+            raise
+            
+    except Exception as e:
+        print(f"原子写入失败: {e}")
+        return False
 
 
 def export_to_txt(result: ParseResult, file_path: str) -> bool:

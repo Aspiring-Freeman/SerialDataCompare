@@ -1,0 +1,96 @@
+{
+    "protocol_name": "工业表计协议示例",
+    "version": "1.0",
+    "schema_version": "1.0",
+    "description": "演示字段缩放、位域解析等高级功能的协议配置",
+    "frame_header": "68",
+    "frame_tail": "16",
+    "checksum_config": {
+        "checksum_type": "累加和",
+        "position": "帧尾前",
+        "checksum_length": 1,
+        "checksum_start": 0,
+        "checksum_end": null,
+        "checksum_endianness": "little"
+    },
+    "fields": [
+        {
+            "name": "地址",
+            "byte_count": 1,
+            "field_type": "uint8",
+            "description": "设备地址"
+        },
+        {
+            "name": "命令",
+            "byte_count": 1,
+            "field_type": "uint8",
+            "description": "命令码"
+        },
+        {
+            "name": "长度",
+            "byte_count": 1,
+            "field_type": "uint8",
+            "description": "数据长度"
+        },
+        {
+            "name": "温度",
+            "byte_count": 2,
+            "field_type": "uint16",
+            "endianness": "little",
+            "description": "温度传感器数据",
+            "multiplier": 0.1,
+            "value_offset": -40,
+            "unit": "°C",
+            "decimal_places": 1
+        },
+        {
+            "name": "电压",
+            "byte_count": 2,
+            "field_type": "uint16",
+            "endianness": "little",
+            "description": "电池电压",
+            "multiplier": 0.001,
+            "value_offset": 0,
+            "unit": "V",
+            "decimal_places": 3
+        },
+        {
+            "name": "状态字",
+            "byte_count": 1,
+            "field_type": "uint8",
+            "description": "设备状态",
+            "bit_fields": [
+                {
+                    "name": "供电状态",
+                    "start_bit": 0,
+                    "bit_count": 1,
+                    "description": "0=电池供电, 1=外部供电",
+                    "display_format": "decimal"
+                },
+                {
+                    "name": "通信状态",
+                    "start_bit": 1,
+                    "bit_count": 1,
+                    "description": "0=正常, 1=异常",
+                    "display_format": "decimal"
+                },
+                {
+                    "name": "报警标志",
+                    "start_bit": 4,
+                    "bit_count": 4,
+                    "description": "报警位域",
+                    "display_format": "binary"
+                }
+            ]
+        },
+        {
+            "name": "能量",
+            "byte_count": 4,
+            "field_type": "bcd_rev",
+            "description": "累计电量(BCD码)",
+            "multiplier": 0.01,
+            "unit": "kWh",
+            "decimal_places": 2
+        }
+    ]
+}

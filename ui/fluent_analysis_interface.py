@@ -1,16 +1,20 @@
 # This Python file uses the following encoding: utf-8
 """
 数据分析界面 - Fluent Design
+使用 QAbstractTableModel + QTableView 实现虚拟滚动，提升大数据量性能
 """
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidgetItem
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QHeaderView, QAbstractItemView
+)
 from PySide6.QtCore import Signal, Qt
 
 from qfluentwidgets import (
-    ScrollArea, CardWidget, PushButton, TextEdit, TableWidget,
+    ScrollArea, CardWidget, PushButton, TextEdit, TableView,
     TitleLabel, BodyLabel, FluentIcon as FIF, InfoBar, InfoBarPosition
 )
 
 from models import ParseResult
+from models.frame_table_model import FrameTableModel
 from ui.history_dialog import HistoryDialog
 
 
@@ -110,9 +114,9 @@ class AnalysisInterface(QWidget):
         # 按钮
         button_layout = QHBoxLayout()
         
-        analyze_btn = PushButton(FIF.SEARCH, "开始分析")
-        analyze_btn.clicked.connect(self.start_analysis)
-        button_layout.addWidget(analyze_btn)
+        self.analyze_btn = PushButton(FIF.SEARCH, "开始分析")
+        self.analyze_btn.clicked.connect(self.start_analysis)
+        button_layout.addWidget(self.analyze_btn)
         
         clear_btn = PushButton(FIF.DELETE, "清空")
         clear_btn.clicked.connect(self.input_text.clear)
@@ -164,23 +168,38 @@ class AnalysisInterface(QWidget):
         
         card_layout.addLayout(title_layout)
         
-        # 结果表格
-        self.result_table = TableWidget()
-        self.result_table.setColumnCount(5)
-        self.result_table.setHorizontalHeaderLabels([
-            "帧序号", "起始位置", "结束位置", "原始数据", "解析结果"
-        ])
+        # 创建帧数据模型
+        self.frame_model = FrameTableModel(self)
+        
+        # 结果表格 - 使用 qfluentwidgets TableView + FrameTableModel
+        self.result_table = TableView()
+        self.result_table.setModel(self.frame_model)
         self.result_table.setMinimumHeight(400)
         
+        # 设置表格样式
+        self.result_table.setAlternatingRowColors(True)
+        self.result_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.result_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.result_table.setShowGrid(True)
+        self.result_table.setSortingEnabled(False)  # 暂时禁用排序
+        
+        # 设置水平表头
+        header = self.result_table.horizontalHeader()
+        header.setStretchLastSection(True)
+        header.setDefaultAlignment(Qt.AlignCenter)
+        
         # 设置列宽
-        self.result_table.setColumnWidth(0, 80)
-        self.result_table.setColumnWidth(1, 90)
-        self.result_table.setColumnWidth(2, 90)
-        self.result_table.setColumnWidth(3, 400)
-        self.result_table.setColumnWidth(4, 300)
+        column_widths = self.frame_model.get_column_widths()
+        for i, width in enumerate(column_widths):
+            self.result_table.setColumnWidth(i, width)
+        
+        # 隐藏垂直表头（行号由模型提供）
+        self.result_table.verticalHeader().setVisible(False)
         
         # 连接选择信号
-        self.result_table.itemSelectionChanged.connect(self.on_selection_changed)
+        self.result_table.selectionModel().selectionChanged.connect(
+            self.on_selection_changed
+        )
         
         card_layout.addWidget(self.result_table)
         
@@ -246,35 +265,22 @@ class AnalysisInterface(QWidget):
         
         self.analysis_started.emit(hex_data)
     
+    def set_analyzing(self, is_analyzing: bool):
+        """设置分析状态，用于线程安全控制
+        
+        Args:
+            is_analyzing: True 表示正在分析，禁用按钮; False 表示分析完成，启用按钮
+        """
+        self.analyze_btn.setEnabled(not is_analyzing)
+        if is_analyzing:
+            self.analyze_btn.setText("分析中...")
+        else:
+            self.analyze_btn.setText("开始分析")
+    
     def show_result(self, result: ParseResult):
         """显示分析结果"""
-        # 先清空表格，提高性能
-        self.result_table.clearContents()
-        self.result_table.setRowCount(0)
-        self.result_table.setRowCount(len(result.frames))
-        
-        for i, frame in enumerate(result.frames):
-            # 帧序号
-            self.result_table.setItem(i, 0, QTableWidgetItem(f"{i + 1}"))
-            
-            # 起始位置
-            self.result_table.setItem(i, 1, QTableWidgetItem(f"{frame.start_position}"))
-            
-            # 结束位置
-            self.result_table.setItem(i, 2, QTableWidgetItem(f"{frame.end_position}"))
-            
-            # 原始数据
-            raw_hex = frame.raw_data.hex().upper() if isinstance(frame.raw_data, bytes) else str(frame.raw_data)
-            self.result_table.setItem(i, 3, QTableWidgetItem(raw_hex))
-            
-            # 导入格式化函数
-            from models.protocol import format_field_value
-            
-            # 解析结果（格式化字段值）
-            parsed = ", ".join([
-                f"{k}: {format_field_value(v)}" for k, v in frame.fields.items()
-            ])
-            self.result_table.setItem(i, 4, QTableWidgetItem(parsed))
+        # 使用模型设置数据，支持虚拟滚动
+        self.frame_model.set_frames(result.frames)
         
         InfoBar.success(
             title="成功",
@@ -288,15 +294,19 @@ class AnalysisInterface(QWidget):
     
     def clear_results(self):
         """清空分析结果"""
-        self.result_table.clearContents()
-        self.result_table.setRowCount(0)
+        self.frame_model.clear()
     
-    def on_selection_changed(self):
+    def on_selection_changed(self, selected, deselected):
         """表格选择变化"""
-        selected_rows = self.result_table.selectedIndexes()
-        if selected_rows:
-            row = selected_rows[0].row()
+        indexes = selected.indexes()
+        if indexes:
+            row = indexes[0].row()
+            self.frame_model.set_highlight_row(row)
             self.frame_selected.emit(row)
+    
+    def get_frame(self, row: int):
+        """获取指定行的帧数据"""
+        return self.frame_model.get_frame(row)
     
     def export_txt(self):
         """导出TXT"""

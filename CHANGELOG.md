@@ -1,5 +1,69 @@
 # 变更日志 (CHANGELOG)
 
+## [1.4.5] - 2025-11-21
+
+### 🏗️ 架构改进（重大重构）
+
+#### 1. 自定义异常体系
+- **新增 `core/exceptions.py`**：结构化异常处理
+  - `SerialDataCompareError`：基础异常类
+  - `ProtocolParseError`：协议解析错误（含字段名、位置、期望/实际字节数）
+  - `ChecksumError`：校验和错误（含期望/实际值）
+  - `ConfigValidationError`：配置验证错误（含配置键、无效值）
+  - `DataProcessingError`：数据处理错误
+  - `ProtocolLoadError` / `ProtocolSaveError`：协议文件操作错误
+
+#### 2. 解析上下文追踪
+- **新增 `core/parse_context.py`**：解析状态管理
+  - 位置追踪：当前解析位置、数据总长度
+  - 阶段追踪：INIT/HEADER/FIELDS/CHECKSUM/COMPLETE/ERROR
+  - 错误/警告收集：结构化错误信息
+  - 详细追踪模式：可选的调试信息输出
+  - 摘要生成：解析结果快速概览
+
+#### 3. 分析会话抽象
+- **新增 `core/analysis_session.py`**：数据流封装
+  - `SessionState` 枚举：IDLE/LOADING/ANALYZING/COMPLETE/ERROR
+  - `SessionConfig` 数据类：批量大小、进度间隔、超时设置
+  - `SessionResult` 数据类：帧数据、统计信息、耗时
+  - `AnalysisSession` 类：完整的分析会话生命周期管理
+  - `SessionManager` 类：多会话管理、历史记录
+
+#### 4. 分析控制器提取
+- **新增 `core/analysis_controller.py`**：UI 逻辑分离
+  - 从 `main_window.py` 提取核心分析逻辑
+  - Qt 信号：`protocol_loaded`、`analysis_complete`、`error_occurred`、`progress_updated`
+  - 支持 CSV 导出和分析报告生成
+  - 独立的单元测试能力
+
+#### 5. 协议转换器增强
+- **增强 `core/protocol_converter.py`**
+  - 新增 `SemanticType` 枚举（13种语义类型）
+  - 语义关键词映射：支持中英文关键词自动识别
+  - `infer_semantic_type()` 方法：基于关键词的语义推断
+  - `TypeMapping` 数据类：包含类型、语义、置信度
+  - `convert_field_type_enhanced()` 方法：增强的类型转换
+
+#### 6. 颜色配置验证
+- **增强 `core/color_config.py`**
+  - `ColorConfigValidator` 类：配置验证器
+  - HEX 颜色格式验证（#RGB / #RRGGBB）
+  - 配置迁移支持：版本升级时自动迁移
+  - 导入/导出功能：JSON 格式配置交换
+  - 批量验证：一次性验证所有颜色配置
+
+### 🔧 技术改进
+- 异常上下文属性：快速定位错误原因
+- 解析阶段追踪：调试复杂协议更容易
+- 会话状态管理：支持长时间分析任务
+- 信号驱动架构：更好的 UI 响应性
+
+### 📝 代码质量
+- 单一职责原则：每个模块职责明确
+- 可测试性提升：核心逻辑独立于 UI
+- 类型提示完善：所有新代码使用类型注解
+- 文档完整：详细的 docstring 和注释
+
 ## [1.4.0] - 2025-11-20
 
 ### 🎉 新增功能

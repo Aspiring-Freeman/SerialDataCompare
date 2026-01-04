@@ -55,6 +55,9 @@ class ChecksumType(Enum):
     
     # Adler 校验
     ADLER32 = "Adler-32"
+    
+    # ============ 新增：自定义CRC ============
+    CRC_CUSTOM = "自定义CRC"  # 使用 CRCParameters 配置
 
 
 class ChecksumPosition(Enum):
@@ -76,6 +79,11 @@ class FieldType(Enum):
     DOUBLE = "double"
     BYTES = "bytes"
     STRING = "string"
+    
+    # ============ 新增：BCD码类型 ============
+    BCD = "bcd"              # 标准BCD码（每字节表示00-99）
+    BCD_REVERSED = "bcd_rev" # 逆序BCD码（字节顺序反转）
+    BCD_DATETIME = "bcd_datetime"  # BCD日期时间（YYMMDDhhmmss）
 
 
 class Endianness(Enum):
@@ -109,6 +117,58 @@ def format_field_value(value: Any, field_type: Optional['FieldType'] = None) -> 
 
 
 @dataclass
+class CRCParameters:
+    """CRC算法参数化配置 - 支持自定义CRC变体"""
+    poly: int = 0x8005        # 多项式
+    init: int = 0xFFFF        # 初始值
+    ref_in: bool = True       # 输入反转
+    ref_out: bool = True      # 输出反转
+    xor_out: int = 0x0000     # 结果异或值
+    width: int = 16           # CRC位宽（8/16/32）
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'poly': self.poly,
+            'init': self.init,
+            'ref_in': self.ref_in,
+            'ref_out': self.ref_out,
+            'xor_out': self.xor_out,
+            'width': self.width
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'CRCParameters':
+        return cls(
+            poly=data.get('poly', 0x8005),
+            init=data.get('init', 0xFFFF),
+            ref_in=data.get('ref_in', True),
+            ref_out=data.get('ref_out', True),
+            xor_out=data.get('xor_out', 0x0000),
+            width=data.get('width', 16)
+        )
+    
+    @classmethod
+    def modbus(cls) -> 'CRCParameters':
+        """MODBUS CRC16"""
+        return cls(poly=0x8005, init=0xFFFF, ref_in=True, ref_out=True, xor_out=0x0000, width=16)
+    
+    @classmethod
+    def ccitt(cls) -> 'CRCParameters':
+        """CRC16-CCITT"""
+        return cls(poly=0x1021, init=0xFFFF, ref_in=False, ref_out=False, xor_out=0x0000, width=16)
+    
+    @classmethod
+    def xmodem(cls) -> 'CRCParameters':
+        """CRC16-XMODEM"""
+        return cls(poly=0x1021, init=0x0000, ref_in=False, ref_out=False, xor_out=0x0000, width=16)
+    
+    @classmethod
+    def crc32(cls) -> 'CRCParameters':
+        """标准CRC32"""
+        return cls(poly=0x04C11DB7, init=0xFFFFFFFF, ref_in=True, ref_out=True, xor_out=0xFFFFFFFF, width=32)
+
+
+@dataclass
 class ChecksumConfig:
     """校验配置（简化版）"""
     checksum_type: ChecksumType = ChecksumType.NONE
@@ -125,6 +185,10 @@ class ChecksumConfig:
     # 大端：高字节在前（如 XMODEM CRC16 结果 0x1234 存储为 12 34）
     checksum_endianness: Endianness = Endianness.LITTLE  # 默认小端（MODBUS等常用协议）
     
+    # ============ 新增：自定义CRC参数 ============
+    # 当 checksum_type 为 CRC_CUSTOM 时使用
+    crc_params: Optional[CRCParameters] = None
+    
     # 旧版兼容字段（如果新字段为None则使用这些）
     start_offset: int = 0  # 从帧头后第几个字节开始（0表示紧跟帧头）
     end_offset: int = -1   # 到帧尾前第几个字节结束（-1表示到校验码前）
@@ -133,6 +197,174 @@ class ChecksumConfig:
         """数据验证"""
         if self.checksum_length < 1:
             self.checksum_length = 1
+
+
+@dataclass
+class BitFieldDefinition:
+    """位域定义 - 用于在一个字节或多个字节中提取特定的位"""
+    name: str                   # 位域名称
+    start_bit: int              # 起始位（0-based，从LSB开始）
+    bit_count: int              # 位数
+    description: str = ""       # 描述
+    display_format: str = ""    # 显示格式（如 "hex", "binary", "decimal"）
+    value_map: Optional[Dict[int, str]] = None  # 值映射表（可选）
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        result = {
+            'name': self.name,
+            'start_bit': self.start_bit,
+            'bit_count': self.bit_count,
+            'description': self.description,
+            'display_format': self.display_format
+        }
+        if self.value_map:
+            result['value_map'] = self.value_map
+        return result
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'BitFieldDefinition':
+        """从字典创建"""
+        return cls(
+            name=data['name'],
+            start_bit=data.get('start_bit', 0),
+            bit_count=data.get('bit_count', 1),
+            description=data.get('description', ''),
+            display_format=data.get('display_format', ''),
+            value_map=data.get('value_map')
+        )
+    
+    def extract_value(self, byte_value: int) -> int:
+        """从字节值中提取位域值"""
+        mask = (1 << self.bit_count) - 1
+        return (byte_value >> self.start_bit) & mask
+    
+    def format_value(self, value: int) -> str:
+        """格式化位域值"""
+        # 如果有值映射，优先使用映射
+        if self.value_map and value in self.value_map:
+            return self.value_map[value]
+        
+        # 根据显示格式返回
+        if self.display_format == 'hex':
+            return f'0x{value:X}'
+        elif self.display_format == 'binary':
+            return f'{value:0{self.bit_count}b}b'
+        else:
+            return str(value)
+
+
+@dataclass
+class FieldCondition:
+    """字段条件 - 定义字段是否存在或如何解析的条件"""
+    field_name: str             # 依赖的字段名
+    operator: str               # 操作符: ==, !=, >, <, >=, <=, in, not_in
+    value: Any                  # 比较值
+    
+    def evaluate(self, parsed_fields: Dict[str, Any]) -> bool:
+        """评估条件是否满足"""
+        if self.field_name not in parsed_fields:
+            return False
+        
+        field_value = parsed_fields[self.field_name]
+        
+        if self.operator == '==':
+            return field_value == self.value
+        elif self.operator == '!=':
+            return field_value != self.value
+        elif self.operator == '>':
+            return field_value > self.value
+        elif self.operator == '<':
+            return field_value < self.value
+        elif self.operator == '>=':
+            return field_value >= self.value
+        elif self.operator == '<=':
+            return field_value <= self.value
+        elif self.operator == 'in':
+            return field_value in self.value
+        elif self.operator == 'not_in':
+            return field_value not in self.value
+        elif self.operator == '&':  # 按位与
+            return (field_value & self.value) != 0
+        elif self.operator == '!&':  # 按位与等于0
+            return (field_value & self.value) == 0
+        return False
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'field_name': self.field_name,
+            'operator': self.operator,
+            'value': self.value
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'FieldCondition':
+        return cls(
+            field_name=data['field_name'],
+            operator=data.get('operator', '=='),
+            value=data['value']
+        )
+
+
+@dataclass
+class CalculationExpression:
+    """计算表达式 - 用于对字段值进行转换计算"""
+    expression: str             # 表达式字符串，如 "x * 0.1", "x / 100", "(x - 32) * 5 / 9"
+    output_format: str = ""     # 输出格式，如 "{:.2f}°C"
+    
+    def evaluate(self, value: Any) -> Any:
+        """
+        计算表达式
+        在表达式中，x 代表原始字段值
+        支持基本数学运算和一些常用函数
+        """
+        try:
+            # 安全的表达式求值
+            import math
+            # 定义安全的命名空间
+            safe_namespace = {
+                'x': value,
+                'abs': abs,
+                'round': round,
+                'min': min,
+                'max': max,
+                'int': int,
+                'float': float,
+                'pow': pow,
+                'sqrt': math.sqrt,
+                'log': math.log,
+                'log10': math.log10,
+                'sin': math.sin,
+                'cos': math.cos,
+                'tan': math.tan,
+            }
+            result = eval(self.expression, {"__builtins__": {}}, safe_namespace)
+            return result
+        except Exception:
+            return value
+    
+    def format_result(self, value: Any) -> str:
+        """格式化计算结果"""
+        try:
+            computed = self.evaluate(value)
+            if self.output_format:
+                return self.output_format.format(computed)
+            return str(computed)
+        except Exception:
+            return str(value)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'expression': self.expression,
+            'output_format': self.output_format
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'CalculationExpression':
+        return cls(
+            expression=data.get('expression', 'x'),
+            output_format=data.get('output_format', '')
+        )
 
 
 @dataclass
@@ -150,6 +382,54 @@ class FieldDefinition:
     # 锁定状态（锁定后不允许编辑）
     locked: bool = False
     
+    # ============ 新增：长度偏置支持 ============
+    # 实际长度 = 长度字段值 + length_offset
+    # 例如：DLT645协议中，长度字段值不包含帧头帧尾，需要 offset
+    length_offset: int = 0
+    # 长度计算公式（高级用法，优先于 length_offset）
+    # 例如："x + 2" 或 "x - 5"，其中 x 为长度字段值
+    length_formula: Optional[str] = None
+    
+    # ============ 新增：位域支持 ============
+    # 位域定义列表（用于在字段内提取多个位域）
+    bit_fields: Optional[List[BitFieldDefinition]] = None
+    
+    # ============ 新增：条件字段支持 ============
+    # 字段存在条件（满足条件时该字段才存在）
+    condition: Optional[FieldCondition] = None
+    
+    # ============ 新增：计算表达式支持 ============
+    # 计算表达式（用于对字段值进行转换）
+    calculation: Optional[CalculationExpression] = None
+    
+    # ============ 新增：数值缩放支持（工业表计协议常用）============
+    # 缩放公式: display_value = raw_value * multiplier + value_offset
+    # 例如：温度传感器 raw=250, multiplier=0.1, value_offset=-40 => 显示 -15°C
+    multiplier: float = 1.0           # 倍率，默认1（不缩放）
+    value_offset: float = 0.0         # 值偏移，默认0（不偏移）
+    unit: str = ""                    # 单位，如 "°C", "V", "A", "kWh"
+    decimal_places: int = -1          # 小数位数，-1表示自动
+    
+    def calculate_actual_length(self, length_value: int) -> int:
+        """
+        计算实际长度
+        
+        Args:
+            length_value: 长度字段的原始值
+            
+        Returns:
+            计算后的实际长度
+        """
+        if self.length_formula:
+            try:
+                # 使用公式计算
+                result = eval(self.length_formula, {"__builtins__": {}}, {'x': length_value})
+                return int(result)
+            except Exception:
+                pass
+        # 使用简单偏置
+        return length_value + self.length_offset
+    
     def is_multi_byte_type(self) -> bool:
         """判断是否为多字节类型"""
         # 对于数值类型，直接返回True
@@ -164,6 +444,110 @@ class FieldDefinition:
             return self.byte_count > 1
         return False
     
+    def has_bit_fields(self) -> bool:
+        """判断是否有位域定义"""
+        return self.bit_fields is not None and len(self.bit_fields) > 0
+    
+    def is_conditional(self) -> bool:
+        """判断是否是条件字段"""
+        return self.condition is not None
+    
+    def has_calculation(self) -> bool:
+        """判断是否有计算表达式"""
+        return self.calculation is not None
+    
+    def has_scaling(self) -> bool:
+        """判断是否需要缩放转换"""
+        return self.multiplier != 1.0 or self.value_offset != 0.0
+    
+    def apply_scaling(self, value: Any) -> Any:
+        """
+        应用缩放转换
+        公式: display_value = raw_value * multiplier + value_offset
+        
+        Args:
+            value: 原始值（可以是int/float/str）
+            
+        Returns:
+            缩放后的值
+        """
+        if not self.has_scaling():
+            return value
+        
+        try:
+            # 尝试转换为数值
+            if isinstance(value, (int, float)):
+                num_value = float(value)
+            elif isinstance(value, str):
+                # BCD等字符串类型也尝试转换
+                num_value = float(value)
+            else:
+                return value
+            
+            # 应用缩放公式
+            result = num_value * self.multiplier + self.value_offset
+            return result
+        except (ValueError, TypeError):
+            return value
+    
+    def format_scaled_value(self, value: Any) -> str:
+        """
+        格式化缩放后的值（带单位）
+        
+        Args:
+            value: 原始值
+            
+        Returns:
+            格式化的字符串，如 "25.5°C"
+        """
+        scaled = self.apply_scaling(value)
+        
+        if isinstance(scaled, float):
+            if self.decimal_places >= 0:
+                # 使用指定的小数位数
+                formatted = f"{scaled:.{self.decimal_places}f}"
+            else:
+                # 自动格式化，移除末尾的0
+                formatted = f"{scaled:.6f}".rstrip('0').rstrip('.')
+        else:
+            formatted = str(scaled)
+        
+        # 添加单位
+        if self.unit:
+            formatted = f"{formatted}{self.unit}"
+        
+        return formatted
+
+    def check_condition(self, parsed_fields: Dict[str, Any]) -> bool:
+        """检查条件是否满足（无条件时返回True）"""
+        if self.condition is None:
+            return True
+        return self.condition.evaluate(parsed_fields)
+    
+    def apply_calculation(self, value: Any) -> Any:
+        """应用计算表达式"""
+        if self.calculation is None:
+            return value
+        return self.calculation.evaluate(value)
+    
+    def format_calculated_value(self, value: Any) -> str:
+        """格式化计算后的值"""
+        if self.calculation is None:
+            return str(value)
+        return self.calculation.format_result(value)
+    
+    def extract_bit_fields(self, byte_value: int) -> Dict[str, Any]:
+        """提取所有位域值"""
+        result = {}
+        if self.bit_fields:
+            for bf in self.bit_fields:
+                result[bf.name] = {
+                    'value': bf.extract_value(byte_value),
+                    'formatted': bf.format_value(bf.extract_value(byte_value)),
+                    'description': bf.description
+                }
+        return result
+    
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         result = {
@@ -173,11 +557,38 @@ class FieldDefinition:
             'description': self.description,
             'order': self.order,
             'length_field': self.length_field,
-            'locked': self.locked
+            'locked': self.locked,
+            'length_offset': self.length_offset
         }
+        # 保存长度公式
+        if self.length_formula:
+            result['length_formula'] = self.length_formula
+            
         # 只有多字节类型才保存字节序
         if self.is_multi_byte_type():
             result['endianness'] = self.endianness.value
+        
+        # 保存位域定义
+        if self.bit_fields:
+            result['bit_fields'] = [bf.to_dict() for bf in self.bit_fields]
+        
+        # 保存条件
+        if self.condition:
+            result['condition'] = self.condition.to_dict()
+        
+        # 保存计算表达式
+        if self.calculation:
+            result['calculation'] = self.calculation.to_dict()
+        
+        # 保存缩放配置（仅在非默认值时保存）
+        if self.has_scaling():
+            result['multiplier'] = self.multiplier
+            result['value_offset'] = self.value_offset
+        if self.unit:
+            result['unit'] = self.unit
+        if self.decimal_places >= 0:
+            result['decimal_places'] = self.decimal_places
+        
         return result
     
     @classmethod
@@ -189,6 +600,21 @@ class FieldDefinition:
         if 'endianness' in data:
             endianness = Endianness(data['endianness'])
         
+        # 解析位域定义
+        bit_fields = None
+        if 'bit_fields' in data and data['bit_fields']:
+            bit_fields = [BitFieldDefinition.from_dict(bf) for bf in data['bit_fields']]
+        
+        # 解析条件
+        condition = None
+        if 'condition' in data and data['condition']:
+            condition = FieldCondition.from_dict(data['condition'])
+        
+        # 解析计算表达式
+        calculation = None
+        if 'calculation' in data and data['calculation']:
+            calculation = CalculationExpression.from_dict(data['calculation'])
+        
         return cls(
             name=data['name'],
             byte_count=data['byte_count'],
@@ -197,7 +623,17 @@ class FieldDefinition:
             order=data.get('order', 0),
             length_field=data.get('length_field'),
             endianness=endianness,
-            locked=data.get('locked', False)
+            locked=data.get('locked', False),
+            length_offset=data.get('length_offset', 0),
+            length_formula=data.get('length_formula'),
+            bit_fields=bit_fields,
+            condition=condition,
+            calculation=calculation,
+            # 缩放配置
+            multiplier=data.get('multiplier', 1.0),
+            value_offset=data.get('value_offset', 0.0),
+            unit=data.get('unit', ''),
+            decimal_places=data.get('decimal_places', -1)
         )
 
 
@@ -222,6 +658,10 @@ class ProtocolConfig:
     
     # 字段定义列表
     fields: List[FieldDefinition] = field(default_factory=list)
+    
+    # UI锁定状态
+    basic_info_locked: bool = False  # 基本信息锁定状态
+    checksum_locked: bool = False    # 校验配置锁定状态
     
     def __post_init__(self):
         """数据验证"""
@@ -315,6 +755,10 @@ class ProtocolConfig:
         result['checksum_config'] = checksum_config
         result['fields'] = [f.to_dict() for f in self.fields]
         
+        # 保存UI锁定状态
+        result['basic_info_locked'] = self.basic_info_locked
+        result['checksum_locked'] = self.checksum_locked
+        
         return result
     
     @staticmethod
@@ -381,5 +825,7 @@ class ProtocolConfig:
             frame_length=data.get('frame_length'),  # 可选的固定帧长度
             length_field_name=data.get('length_field_name'),  # 可选的长度字段名称
             checksum_config=checksum_config,
-            fields=fields
+            fields=fields,
+            basic_info_locked=data.get('basic_info_locked', False),
+            checksum_locked=data.get('checksum_locked', False)
         )

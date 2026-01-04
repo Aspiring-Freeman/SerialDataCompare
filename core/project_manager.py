@@ -9,6 +9,8 @@ from typing import List, Optional, Dict
 from datetime import datetime
 from pathlib import Path
 
+from utils import atomic_write_json
+
 
 @dataclass
 class ProtocolInfo:
@@ -195,7 +197,7 @@ class ProjectManager:
             print(f"加载项目配置失败: {e}")
     
     def save_config(self):
-        """保存项目配置"""
+        """保存项目配置 - 使用原子写入确保数据安全"""
         try:
             # 按顺序保存项目
             ordered_projects = []
@@ -213,8 +215,8 @@ class ProjectManager:
                 'current_protocol_path': self.current_protocol_path
             }
             
-            with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            if not atomic_write_json(str(self.config_file), data):
+                print("保存项目配置失败")
                 
         except Exception as e:
             print(f"保存项目配置失败: {e}")

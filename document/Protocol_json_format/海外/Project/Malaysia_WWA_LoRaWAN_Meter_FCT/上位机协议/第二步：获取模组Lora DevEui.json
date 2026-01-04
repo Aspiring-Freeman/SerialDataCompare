@@ -1,0 +1,67 @@
+{
+  "protocol_name": "第二步：获取模组Lora DevEui",
+  "version": "1.0",
+  "description": "开始测试指令\n0工位:68 BC 06 00 2A 16\n响应:   68 BD 16 00 33 66 35 33 30 31 32 62 30 30 30 30 31 62 33 33 EA 16\n\nASCII: 33 66 35 33 30 31 32 62 30 30 30 30 31 62 33 33\n       3  f  5  3  0  1  2  b  0  0  0  0  1  b  3  3\n\nDevEUI: 3f53012b00001b33\n",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "frame_length": 22,
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1,
+    "checksum_position": 20,
+    "checksum_start": 0,
+    "checksum_end": 20,
+    "checksum_endianness": "big"
+  },
+  "fields": [
+    {
+      "name": "数据标识(BA)",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "整包长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "工位",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    },
+    {
+      "name": "DevEUI",
+      "byte_count": 16,
+      "field_type": "string",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "endianness": "big"
+    },
+    {
+      "name": "累加和校验",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true
+    }
+  ]
+}

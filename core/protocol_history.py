@@ -8,6 +8,8 @@ import os
 from typing import List, Dict
 from pathlib import Path
 
+from utils import atomic_write_json
+
 
 class ProtocolHistory:
     """协议历史记录管理器"""
@@ -44,13 +46,10 @@ class ProtocolHistory:
             return []
     
     def _save_history(self):
-        """保存历史记录"""
-        try:
-            data = {'history': self.history}
-            with open(self.history_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            print(f"保存历史记录失败: {e}")
+        """保存历史记录 - 使用原子写入确保数据安全"""
+        data = {'history': self.history}
+        if not atomic_write_json(self.history_file, data):
+            print("保存历史记录失败")
     
     def add_protocol(self, file_path: str, protocol_name: str = None):
         """
