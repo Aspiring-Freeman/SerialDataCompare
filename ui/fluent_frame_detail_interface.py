@@ -14,78 +14,95 @@ from qfluentwidgets import (
 )
 
 
+# 预定义样式，避免重复创建字符串
+BYTE_STYLE_NORMAL = """
+    QLabel {
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 13px;
+        background: #F5F5F5;
+        border: 1px solid #D0D0D0;
+        border-radius: 3px;
+        color: #333333;
+    }
+    QLabel:hover {
+        background: #E8F4FD;
+        border-color: #0078D4;
+    }
+"""
+
+BYTE_STYLE_HIGHLIGHT = """
+    QLabel {
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 13px;
+        background: #FFD700;
+        border: 1px solid #FFC107;
+        border-radius: 3px;
+        color: #333;
+        font-weight: bold;
+    }
+"""
+
+
 class ClickableByteLabel(QLabel):
     """可点击的字节标签，用于显示单个十六进制字节"""
     
     clicked = Signal(int)  # 发送字节索引
-    hovered = Signal(int)  # 发送字节索引
     
     def __init__(self, byte_value: str, byte_index: int, parent=None):
         super().__init__(byte_value, parent)
         self.byte_index = byte_index
         self.is_highlighted = False
-        self.highlight_color = "#FFF3CD"  # 默认高亮颜色
         
         self.setAlignment(Qt.AlignCenter)
         self.setCursor(QCursor(Qt.PointingHandCursor))
         self.setFixedSize(30, 24)
-        self._update_style()
+        self.setStyleSheet(BYTE_STYLE_NORMAL)
     
-    def _update_style(self):
-        if self.is_highlighted:
-            self.setStyleSheet(f"""
-                QLabel {{
-                    font-family: 'Consolas', 'Courier New', monospace;
-                    font-size: 13px;
-                    background: {self.highlight_color};
-                    border: 1px solid #FFC107;
-                    border-radius: 3px;
-                    color: #333;
-                    font-weight: bold;
-                }}
-            """)
-        else:
-            self.setStyleSheet("""
-                QLabel {
-                    font-family: 'Consolas', 'Courier New', monospace;
-                    font-size: 13px;
-                    background: #F5F5F5;
-                    border: 1px solid #D0D0D0;
-                    border-radius: 3px;
-                    color: #333333;
-                }
-                QLabel:hover {
-                    background: #E8F4FD;
-                    border-color: #0078D4;
-                }
-            """)
-    
-    def set_highlighted(self, highlighted: bool, color: str = "#FFF3CD"):
+    def set_highlighted(self, highlighted: bool, color: str = None):
+        """设置高亮状态，避免不必要的更新"""
+        if self.is_highlighted == highlighted:
+            return  # 状态未变，不更新
         self.is_highlighted = highlighted
-        self.highlight_color = color
-        self._update_style()
-    
-    def enterEvent(self, event):
-        self.hovered.emit(self.byte_index)
-        super().enterEvent(event)
+        if highlighted:
+            self.setStyleSheet(BYTE_STYLE_HIGHLIGHT)
+        else:
+            self.setStyleSheet(BYTE_STYLE_NORMAL)
     
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.byte_index)
         super().mousePressEvent(event)
+# 预定义字段样式
+FIELD_STYLE_NORMAL = """
+    QFrame {
+        background: #F8F8F8;
+        border: 1px solid #E0E0E0;
+        border-radius: 6px;
+    }
+    QFrame:hover {
+        background: #E8F4FD;
+        border-color: #0078D4;
+    }
+"""
+
+FIELD_STYLE_HIGHLIGHT = """
+    QFrame {
+        background: #FFD700;
+        border: 2px solid #FFC107;
+        border-radius: 6px;
+    }
+"""
 
 
 class ClickableFieldLabel(QFrame):
     """可点击的字段标签，支持高亮"""
     
     clicked = Signal(str)  # 发送字段名
-    hovered = Signal(str)  # 发送字段名
     
     def __init__(self, field_name: str, field_value: str, parent=None):
         super().__init__(parent)
         self.field_name = field_name
         self.is_highlighted = False
-        self.highlight_color = "#FFF3CD"
         
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 6, 8, 6)
@@ -99,66 +116,35 @@ class ClickableFieldLabel(QFrame):
         self.value_label = QLabel(field_value)
         self.value_label.setWordWrap(True)
         self.value_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.value_label.setStyleSheet("color: #0078D4; font-family: 'Courier New', monospace;")
         
         layout.addWidget(self.name_label)
         layout.addWidget(self.value_label, 1)
         
         self.setCursor(QCursor(Qt.PointingHandCursor))
-        self._update_style()
+        self.setStyleSheet(FIELD_STYLE_NORMAL)
     
-    def _update_style(self):
-        if self.is_highlighted:
-            self.setStyleSheet(f"""
-                QFrame {{
-                    background: {self.highlight_color};
-                    border: 2px solid #FFC107;
-                    border-radius: 6px;
-                }}
-            """)
+    def set_highlighted(self, highlighted: bool, color: str = None):
+        """设置高亮状态，避免不必要的更新"""
+        if self.is_highlighted == highlighted:
+            return  # 状态未变，不更新
+        self.is_highlighted = highlighted
+        if highlighted:
+            self.setStyleSheet(FIELD_STYLE_HIGHLIGHT)
             self.value_label.setStyleSheet("color: #333; font-family: 'Courier New', monospace;")
         else:
-            self.setStyleSheet("""
-                QFrame {
-                    background: #F8F8F8;
-                    border: 1px solid #E0E0E0;
-                    border-radius: 6px;
-                }
-                QFrame:hover {
-                    background: #E8F4FD;
-                    border-color: #0078D4;
-                }
-            """)
+            self.setStyleSheet(FIELD_STYLE_NORMAL)
             self.value_label.setStyleSheet("color: #0078D4; font-family: 'Courier New', monospace;")
-    
-    def set_highlighted(self, highlighted: bool, color: str = "#FFF3CD"):
-        self.is_highlighted = highlighted
-        self.highlight_color = color
-        self._update_style()
-    
-    def enterEvent(self, event):
-        self.hovered.emit(self.field_name)
-        super().enterEvent(event)
     
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.field_name)
         super().mousePressEvent(event)
-
-
 class FrameDetailInterface(QWidget):
     """帧详情界面 - 支持双向高亮联动"""
     
-    # 字段颜色映射（用于区分不同字段）
-    FIELD_COLORS = [
-        "#FFF3CD",  # 黄色
-        "#D4EDDA",  # 绿色
-        "#D1ECF1",  # 蓝色
-        "#F8D7DA",  # 红色
-        "#E2D5F5",  # 紫色
-        "#FFE5D0",  # 橙色
-        "#D5E8D4",  # 浅绿
-        "#DAE8FC",  # 浅蓝
-    ]
+    # 高亮颜色
+    HIGHLIGHT_COLOR = "#FFD700"  # 金黄色高亮
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -174,6 +160,8 @@ class FrameDetailInterface(QWidget):
         self.field_widgets = {}
         # 字段颜色映射
         self.field_colors = {}
+        # 当前高亮的字段（用于点击切换）
+        self.current_highlighted_field = None
         
         # 滚动区域
         self.scroll = ScrollArea(self)
@@ -281,7 +269,7 @@ class FrameDetailInterface(QWidget):
         title_layout.addWidget(title)
         title_layout.addStretch()
         
-        hint = BodyLabel("点击字节查看对应字段，悬停显示高亮")
+        hint = BodyLabel("点击字节/字段高亮，再次点击或点击空白取消")
         hint.setStyleSheet("color: #606060; font-size: 13px;")
         title_layout.addWidget(hint)
         card_layout.addLayout(title_layout)
@@ -316,11 +304,11 @@ class FrameDetailInterface(QWidget):
         desc_layout = QHBoxLayout()
         desc_layout.setSpacing(20)
         
-        desc1 = BodyLabel("💡 点击字节高亮对应字段")
+        desc1 = BodyLabel("💡 点击字节或字段高亮")
         desc1.setStyleSheet("color: #606060; font-size: 12px;")
         desc_layout.addWidget(desc1)
         
-        desc2 = BodyLabel("📋 悬停字段高亮对应字节")
+        desc2 = BodyLabel("📋 再次点击或点空白取消")
         desc2.setStyleSheet("color: #606060; font-size: 12px;")
         desc_layout.addWidget(desc2)
         
@@ -498,13 +486,11 @@ class FrameDetailInterface(QWidget):
             
             label = ClickableByteLabel(f"{byte:02X}", i)
             label.clicked.connect(self._on_byte_clicked)
-            label.hovered.connect(self._on_byte_hovered)
             
             self.bytes_layout.addWidget(label, row, col)
             self.byte_labels.append(label)
         
-        # 初始高亮：为每个字段的字节设置颜色
-        self._apply_field_colors_to_bytes()
+        # 默认不高亮任何字节（灰色背景）
     
     def _format_hex_data(self, hex_str):
         """格式化十六进制数据，每行16字节，带地址偏移"""
@@ -577,7 +563,6 @@ class FrameDetailInterface(QWidget):
             # 创建可交互的字段标签
             field_widget = ClickableFieldLabel(key, formatted_value)
             field_widget.clicked.connect(self._on_field_clicked)
-            field_widget.hovered.connect(self._on_field_hovered)
             
             # 如果有颜色分配，设置背景色
             if key in self.field_colors:
@@ -625,21 +610,11 @@ class FrameDetailInterface(QWidget):
     # ============ 双向高亮联动方法 ============
     
     def _assign_field_colors(self):
-        """为每个字段分配唯一颜色"""
+        """为每个字段分配颜色（简化版本：所有字段使用统一的高亮颜色）"""
         self.field_colors.clear()
-        color_index = 0
-        
+        # 简化方案：所有字段点击时使用统一的金黄色高亮
         for field_name in self.field_byte_positions.keys():
-            self.field_colors[field_name] = self.FIELD_COLORS[color_index % len(self.FIELD_COLORS)]
-            color_index += 1
-    
-    def _apply_field_colors_to_bytes(self):
-        """将字段颜色应用到对应的字节标签"""
-        for field_name, (start, end) in self.field_byte_positions.items():
-            color = self.field_colors.get(field_name, "#FFF3CD")
-            for i in range(start, end):
-                if 0 <= i < len(self.byte_labels):
-                    self.byte_labels[i].set_highlighted(True, color)
+            self.field_colors[field_name] = self.HIGHLIGHT_COLOR
     
     def _get_field_at_byte(self, byte_index: int) -> str:
         """获取指定字节位置对应的字段名"""
@@ -649,67 +624,69 @@ class FrameDetailInterface(QWidget):
         return ""
     
     def _highlight_field(self, field_name: str, highlight: bool = True):
-        """高亮指定字段及其对应的字节"""
+        """高亮指定字段及其对应的字节 - 优化版本，只更新相关标签"""
         if not field_name:
             return
         
-        color = self.field_colors.get(field_name, "#FFF3CD")
-        
         # 高亮字段标签
         if field_name in self.field_widgets:
-            self.field_widgets[field_name].set_highlighted(highlight, color)
+            self.field_widgets[field_name].set_highlighted(highlight)
         
         # 高亮对应的字节
         if field_name in self.field_byte_positions:
             start, end = self.field_byte_positions[field_name]
-            for i in range(start, end):
-                if 0 <= i < len(self.byte_labels):
-                    # 使用更强的高亮色
-                    highlight_color = "#FFD700" if highlight else color
-                    self.byte_labels[i].set_highlighted(True, highlight_color)
+            # 直接更新指定范围的标签，不遍历全部
+            for i in range(max(0, start), min(end, len(self.byte_labels))):
+                self.byte_labels[i].set_highlighted(highlight)
     
     def _clear_all_highlights(self):
-        """清除所有临时高亮（恢复到字段颜色）"""
-        self._apply_field_colors_to_bytes()
-        for widget in self.field_widgets.values():
-            widget.set_highlighted(False)
+        """清除当前高亮的字段（只更新需要清除的部分）"""
+        # 只清除当前高亮的字段，不遍历所有标签
+        if self.current_highlighted_field:
+            self._highlight_field(self.current_highlighted_field, False)
     
     def _on_byte_clicked(self, byte_index: int):
         """字节被点击时触发"""
-        # 清除之前的高亮
-        self._clear_all_highlights()
-        
-        # 找到对应的字段并高亮
-        field_name = self._get_field_at_byte(byte_index)
-        if field_name:
-            self._highlight_field(field_name, True)
-    
-    def _on_byte_hovered(self, byte_index: int):
-        """字节被悬停时触发"""
         # 找到对应的字段
         field_name = self._get_field_at_byte(byte_index)
-        if field_name and field_name in self.field_widgets:
-            # 临时高亮字段标签
-            self.field_widgets[field_name].set_highlighted(True)
+        
+        if field_name:
+            # 如果点击的是当前已高亮的字段，则取消高亮
+            if field_name == self.current_highlighted_field:
+                self._clear_all_highlights()
+                self.current_highlighted_field = None
+            else:
+                # 清除之前的高亮
+                self._clear_all_highlights()
+                # 高亮新字段
+                self._highlight_field(field_name, True)
+                self.current_highlighted_field = field_name
+        else:
+            # 点击的是空白区域（不属于任何字段的字节），取消高亮
+            self._clear_all_highlights()
+            self.current_highlighted_field = None
     
     def _on_field_clicked(self, field_name: str):
         """字段被点击时触发"""
-        # 清除之前的高亮
-        self._clear_all_highlights()
-        
-        # 高亮字段及其对应的字节
-        self._highlight_field(field_name, True)
+        if field_name:
+            # 如果点击的是当前已高亮的字段，则取消高亮
+            if field_name == self.current_highlighted_field:
+                self._clear_all_highlights()
+                self.current_highlighted_field = None
+            else:
+                # 清除之前的高亮
+                self._clear_all_highlights()
+                # 高亮字段及其对应的字节
+                self._highlight_field(field_name, True)
+                self.current_highlighted_field = field_name
     
-    def _on_field_hovered(self, field_name: str):
-        """字段被悬停时触发"""
-        if field_name in self.field_byte_positions:
-            # 临时高亮对应的字节
-            start, end = self.field_byte_positions[field_name]
-            for i in range(start, end):
-                if 0 <= i < len(self.byte_labels):
-                    self.byte_labels[i].set_highlighted(True, "#FFD700")
-    
-    def leaveEvent(self, event):
-        """鼠标离开界面时恢复默认状态"""
-        self._apply_field_colors_to_bytes()
-        super().leaveEvent(event)
+    def mousePressEvent(self, event):
+        """点击空白区域取消高亮"""
+        # 调用父类方法
+        super().mousePressEvent(event)
+        # 检查点击位置是否在某个子控件上
+        child = self.childAt(event.pos())
+        # 只有当点击的是真正的空白区域（不是子控件）时才取消高亮
+        if child is None and self.current_highlighted_field:
+            self._clear_all_highlights()
+            self.current_highlighted_field = None
