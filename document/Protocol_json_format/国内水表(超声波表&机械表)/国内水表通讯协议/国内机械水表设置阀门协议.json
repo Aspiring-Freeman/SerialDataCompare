@@ -4,15 +4,15 @@
   "description": "国内水表设置阀门协议\n示例：68 00 00 00 00 00 00 00 0A 84 14 00 22 C0 00 04 00 88 1B 16\n18H 表示欠费关阀\n19H 表示关阀上报\n1AH 表示关阀\n1BH 表示报警关阀，用户可\n按键开阀\n1CH 表示开阀\n1DH 表示阀门测试，阀门保\n持原来状态\n1EH 表示强制开阀\n1FH 表示强制关阀",
   "frame_header": "68",
   "frame_tail": "16",
+  "frame_length": 20,
   "checksum_config": {
     "checksum_type": "CRC-16/XMODEM",
     "position": "帧尾前",
     "start_offset": 0,
     "end_offset": -1,
     "checksum_length": 2,
-    "checksum_position": 16,
-    "checksum_start": 0,
-    "checksum_end": 16,
+    "checksum_position": 17,
+    "checksum_end": 17,
     "checksum_endianness": "little"
   },
   "fields": [
@@ -24,6 +24,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
     },
     {
@@ -33,7 +34,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "协议版本号(PV)",
@@ -42,7 +44,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "控制码",
@@ -51,7 +54,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "帧长度",
@@ -61,6 +65,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "little"
     },
     {
@@ -71,7 +76,8 @@
       "order": 0,
       "length_field": null,
       "locked": true,
-      "endianness": "big"
+      "length_offset": 0,
+      "endianness": "little"
     },
     {
       "name": "消息序号",
@@ -80,7 +86,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "数据域:阀门控制命令",
@@ -89,7 +96,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "CRC校验码",
@@ -99,7 +107,11 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "little"
     }
-  ]
+  ],
+  "basic_info_locked": false,
+  "checksum_locked": false,
+  "schema_version": "1.0"
 }

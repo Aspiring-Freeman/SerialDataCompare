@@ -11,7 +11,6 @@
     "end_offset": -1,
     "checksum_length": 1,
     "checksum_position": 81,
-    "checksum_start": 0,
     "checksum_end": 81,
     "checksum_endianness": "little"
   },
@@ -23,7 +22,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "整包长度",
@@ -32,7 +32,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "工位号",
@@ -41,7 +42,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "19V电压(供电电压)",
@@ -51,6 +53,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "little"
     },
     {
@@ -61,6 +64,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "little"
     },
     {
@@ -71,6 +75,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "little"
     },
     {
@@ -81,6 +86,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "little"
     },
     {
@@ -90,7 +96,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "flash检测",
@@ -99,7 +106,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "IMEI号",
@@ -109,6 +117,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
     },
     {
@@ -119,6 +128,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
     },
     {
@@ -129,6 +139,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
     },
     {
@@ -138,7 +149,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "阀门状态",
@@ -147,7 +159,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "阀门到位状态",
@@ -156,7 +169,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "校验码",
@@ -166,6 +180,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
     },
     {
@@ -176,6 +191,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "little"
     },
     {
@@ -185,7 +201,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "LCD 通讯状态",
@@ -194,7 +211,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "KEY_ON  按键状态",
@@ -203,7 +221,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "KEY_OFF  按键状态",
@@ -212,7 +231,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "DOOR_EN  状态",
@@ -221,7 +241,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "电 源 管 理 芯 片  状态",
@@ -230,7 +251,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "压 力 传 感 器 电压",
@@ -240,6 +262,7 @@
       "order": 0,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
     },
     {
@@ -249,7 +272,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "NFC 通讯状态",
@@ -258,7 +282,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "校验码字段",
@@ -267,7 +292,11 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     }
-  ]
+  ],
+  "basic_info_locked": false,
+  "checksum_locked": true,
+  "schema_version": "1.0"
 }
