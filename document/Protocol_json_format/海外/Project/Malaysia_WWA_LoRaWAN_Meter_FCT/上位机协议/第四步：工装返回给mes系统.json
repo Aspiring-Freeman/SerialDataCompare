@@ -1,0 +1,349 @@
+{
+  "protocol_name": "第三步：mes发送从数据库取得的AppKey和AppEui",
+  "version": "1.0",
+  "description": "开始测试指令\n0工位:68AC06001A16\n响应:   68AD6B00E90EE40C0B000F000C00E90E100E040000010101FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000001E40C30303935363930363030303531383838000001FE00FFB900FE5D16\n\n\n",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "frame_length": 107,
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1,
+    "checksum_position": 105,
+    "checksum_end": 105,
+    "checksum_endianness": "big"
+  },
+  "fields": [
+    {
+      "name": "数据标识(BA)",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "整包长度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "工位",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "主电电压",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "主电获取电压",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "静态功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "满水功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "走水功耗",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "备电电压(工装采集)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "备电电压(协议获取)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "备电功耗（工装采样)",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "蓝牙检测（不测)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "flash检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "计量检测（从走水累计流量判断）",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "红外检测",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "IMEI(当前项目没有,全部FF)",
+      "byte_count": 15,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "IMSI(当前项目没有,全部FF)",
+      "byte_count": 15,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "ICCID((当前项目没有,全部FF)",
+      "byte_count": 20,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "CSQ((当前项目没有,全部FF)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "阀门((当前项目没有，默认0)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "阀门到位((当前项目没有,默认0)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "EEPROM",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "GP30电压",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "LoraEui",
+      "byte_count": 16,
+      "field_type": "string",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "强磁检测(默认0，不测）",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "开盖检测(默认0，不测）",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "GPS模组检测（实际是Lora模组，反映入网状态）",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "固件版本",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "RSSI",
+      "byte_count": 2,
+      "field_type": "int16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "ISNR",
+      "byte_count": 2,
+      "field_type": "int16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "累加和",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    }
+  ],
+  "basic_info_locked": false,
+  "checksum_locked": false,
+  "schema_version": "1.0"
+}

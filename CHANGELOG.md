@@ -1,5 +1,37 @@
 # 变更日志 (CHANGELOG)
 
+## [1.5.1] - 2026-01-05
+
+### ✨ 新功能
+
+#### 1. 协议文档整理与新增
+- **协议分类整理**：将示例协议文件重新组织到分类目录
+  - `其他/` - 通用示例协议
+  - `多元产品/压力监测仪/` - 压力监测仪上位机协议 (PMTF.json)
+  - `海外/Project/Malaysia_WWA_LoRaWAN_Meter_FCT/` - 马来西亚 LoRaWAN 水表产测协议
+- **新增马来西亚项目协议**：
+  - 第一步：获取Lora Dev_EUI指令
+  - 第二步：获取模组Lora DevEui
+  - 第三步：mes发送从数据库取得的AppKey和AppEui
+  - 第四步：工装返回给mes系统
+  - 工装日志和透传开启关闭指令
+
+### 🔧 改进
+
+#### 1. Windows 高DPI适配优化
+- **DPI感知设置**：在创建QApplication之前设置Windows DPI感知
+  - 支持 Per-Monitor DPI Awareness V2 (Windows 10 1607+)
+  - 兼容 Per-Monitor DPI Awareness (Windows 8.1)
+  - 回退 System DPI Awareness (Windows Vista+)
+- **高DPI缩放策略**：使用 `Round` 策略替代 `PassThrough`
+- **中文输入法支持**：Windows使用系统默认输入法，Linux支持fcitx/ibus
+
+### 🐛 Bug 修复
+
+- 移除冗余的窗口样式设置 `setStyleSheet("background-color: transparent;")`
+
+---
+
 ## [1.5.0] - 2025-11-22
 
 ### ✨ 新功能

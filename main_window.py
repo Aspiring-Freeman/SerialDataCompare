@@ -5,6 +5,7 @@ Version 2.0.0 - 完整功能版本
 """
 import sys
 import os
+import ctypes
 from datetime import datetime
 from typing import Optional
 
@@ -104,9 +105,6 @@ class MainWindow(FluentWindow):
         
         # 设置默认主题 - 使用 LIGHT 而不是 AUTO 避免初始化问题
         setTheme(Theme.LIGHT)
-        
-        # 确保窗口样式正确应用
-        self.setStyleSheet("background-color: transparent;")
         
         # 启动时最大化窗口
         self.showMaximized()
@@ -469,14 +467,43 @@ class MainWindow(FluentWindow):
 
 def main():
     """主函数"""
-    # 启用高DPI支持
-    QApplication.setHighDpiScaleFactorRoundingPolicy(
-        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
-    )
+    # Windows 高DPI适配设置 - 必须在创建 QApplication 之前设置
+    if sys.platform == 'win32':
+        # Windows DPI 感知设置
+        try:
+            # Windows 10 1607+ 支持 Per-Monitor DPI Awareness V2
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        except Exception:
+            try:
+                # Windows 8.1 支持 Per-Monitor DPI Awareness
+                ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            except Exception:
+                try:
+                    # Windows Vista+ 支持 System DPI Awareness
+                    ctypes.windll.user32.SetProcessDPIAware()
+                except Exception:
+                    pass
     
-    # 设置输入法环境变量（支持fcitx等中文输入法）
-    # 这需要在创建QApplication之前设置
-    os.environ.setdefault('QT_IM_MODULE', 'fcitx')
+    # 启用高DPI缩放
+    os.environ.setdefault('QT_ENABLE_HIGHDPI_SCALING', '1')
+    # 使用高DPI图标
+    os.environ.setdefault('QT_SCALE_FACTOR_ROUNDING_POLICY', 'Round')
+    # 自动检测缩放因子
+    os.environ.setdefault('QT_AUTO_SCREEN_SCALE_FACTOR', '1')
+    
+    # Windows 中文输入法支持
+    if sys.platform == 'win32':
+        # Windows 使用系统默认输入法 - 不设置 QT_IM_MODULE，让系统自动处理
+        # 这样可以正常使用搜狗、微软等中文输入法
+        pass
+    else:
+        # Linux 支持 fcitx/ibus 等中文输入法
+        os.environ.setdefault('QT_IM_MODULE', 'fcitx')
+    
+    # 设置高DPI缩放策略
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.Round
+    )
     
     app = QApplication(sys.argv)
     

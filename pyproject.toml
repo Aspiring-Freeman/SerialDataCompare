@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SerialDataCompare"
-version = "1.5.0"
+version = "1.5.1"
 description = "串口数据协议分析工具 - 用于解析和对比串口通信数据帧"
 readme = "README.md"
 license = {text = "MIT"}
