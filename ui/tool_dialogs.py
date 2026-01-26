@@ -455,6 +455,248 @@ class BaseConverterDialog(QDialog):
             )
 
 
+class HexLogExtractorDialog(QDialog):
+    """HEX日志提取器对话框 - 从串口日志中提取HEX数据帧"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('HEX 日志提取器')
+        self.setWindowFlags(
+            Qt.WindowType.Window |
+            Qt.WindowType.WindowMinimizeButtonHint |
+            Qt.WindowType.WindowMaximizeButtonHint |
+            Qt.WindowType.WindowCloseButtonHint
+        )
+        self.resize(800, 600)
+        self.setMinimumSize(600, 450)
+        self.setSizeGripEnabled(True)
+        self.setStyleSheet(get_dialog_stylesheet())
+        
+        # 主布局
+        self.viewLayout = QVBoxLayout(self)
+        self.viewLayout.setContentsMargins(20, 20, 20, 20)
+        self.viewLayout.setSpacing(10)
+        
+        # 标题
+        self.titleLabel = SubtitleLabel('HEX 日志提取器', self)
+        self.viewLayout.addWidget(self.titleLabel)
+        
+        # 说明
+        self.descLabel = BodyLabel('从串口调试日志中提取 HEX 数据帧（支持 DGM_RX/DGM_TX 等格式）', self)
+        self.descLabel.setTextColor("#888888", "#888888")
+        self.viewLayout.addWidget(self.descLabel)
+        
+        # 输入区域
+        inputFrame = QFrame(self)
+        inputLayout = QVBoxLayout(inputFrame)
+        inputLayout.setContentsMargins(0, 10, 0, 0)
+        
+        inputLabel = BodyLabel('日志数据（粘贴串口日志）', self)
+        inputLabel.setFont(QFont("", 10, QFont.Bold))
+        inputLayout.addWidget(inputLabel)
+        
+        self.inputEdit = TextEdit(self)
+        self.inputEdit.setPlaceholderText(
+            '粘贴日志数据，支持格式如:\n'
+            '[12:13:39.223] RX ← D/HEX DGM_RX: 0000-0007: 68 01 80 16 00 00 00 68    h......h\n'
+            '[12:13:39.292] RX ← D/HEX DGM_RX: 0008-000F: 84 28 00 25 07 18 14 54    .(.%...T\n'
+            '...'
+        )
+        self.inputEdit.setMinimumHeight(150)
+        inputLayout.addWidget(self.inputEdit)
+        
+        self.viewLayout.addWidget(inputFrame)
+        
+        # 提取按钮区域
+        btnFrame = QFrame(self)
+        btnLayout = QHBoxLayout(btnFrame)
+        btnLayout.setContentsMargins(0, 5, 0, 5)
+        
+        self.extractBtn = PushButton('提取 HEX 数据', self)
+        self.extractBtn.setIcon(FIF.SEARCH)
+        self.extractBtn.clicked.connect(self.extract_hex)
+        btnLayout.addWidget(self.extractBtn)
+        
+        self.copyBtn = PushButton('复制结果', self)
+        self.copyBtn.setIcon(FIF.COPY)
+        self.copyBtn.clicked.connect(self.copy_result)
+        btnLayout.addWidget(self.copyBtn)
+        
+        self.clearBtn = PushButton('清空', self)
+        self.clearBtn.setIcon(FIF.DELETE)
+        self.clearBtn.clicked.connect(self.clear_all)
+        btnLayout.addWidget(self.clearBtn)
+        
+        btnLayout.addStretch()
+        self.viewLayout.addWidget(btnFrame)
+        
+        # 结果区域
+        resultFrame = QFrame(self)
+        resultLayout = QVBoxLayout(resultFrame)
+        resultLayout.setContentsMargins(0, 10, 0, 0)
+        
+        resultLabel = BodyLabel('提取结果', self)
+        resultLabel.setFont(QFont("", 10, QFont.Bold))
+        resultLayout.addWidget(resultLabel)
+        
+        self.resultEdit = TextEdit(self)
+        self.resultEdit.setReadOnly(True)
+        self.resultEdit.setMinimumHeight(150)
+        resultLayout.addWidget(self.resultEdit)
+        
+        self.viewLayout.addWidget(resultFrame)
+        
+        # 关闭按钮
+        btnCloseFrame = QFrame(self)
+        btnCloseLayout = QHBoxLayout(btnCloseFrame)
+        btnCloseLayout.setContentsMargins(0, 10, 0, 0)
+        btnCloseLayout.addStretch()
+        
+        self.closeBtn = PushButton('关闭', self)
+        self.closeBtn.clicked.connect(self.close)
+        btnCloseLayout.addWidget(self.closeBtn)
+        
+        self.viewLayout.addWidget(btnCloseFrame)
+    
+    def extract_hex(self):
+        """从日志中提取 HEX 数据"""
+        import re
+        
+        input_text = self.inputEdit.toPlainText().strip()
+        if not input_text:
+            self.show_info('请输入日志数据', 'warning')
+            return
+        
+        try:
+            # 匹配格式: [时间] RX/TX ← D/HEX DGM_RX/DGM_TX: 地址范围: HEX数据    ASCII表示
+            # 例如: [12:13:39.223] RX ← D/HEX DGM_RX: 0000-0007: 68 01 80 16 00 00 00 68    h......h
+            
+            # 正则模式：提取地址范围后的HEX数据（多个空格分隔的两位十六进制数）
+            pattern = r'[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}:\s*([0-9A-Fa-f]{2}(?:\s+[0-9A-Fa-f]{2})*)\s+'
+            
+            all_hex_bytes = []
+            lines = input_text.split('\n')
+            matched_lines = 0
+            
+            for line in lines:
+                match = re.search(pattern, line)
+                if match:
+                    hex_part = match.group(1)
+                    # 提取所有十六进制字节
+                    hex_bytes = hex_part.split()
+                    all_hex_bytes.extend(hex_bytes)
+                    matched_lines += 1
+            
+            if not all_hex_bytes:
+                # 尝试更宽松的模式：直接提取连续的HEX字节
+                pattern2 = r':\s*([0-9A-Fa-f]{2}(?:\s+[0-9A-Fa-f]{2})+)\s+[\x00-\x7F]+$'
+                for line in lines:
+                    match = re.search(pattern2, line)
+                    if match:
+                        hex_part = match.group(1)
+                        hex_bytes = hex_part.split()
+                        all_hex_bytes.extend(hex_bytes)
+                        matched_lines += 1
+            
+            if not all_hex_bytes:
+                self.show_info('未能识别日志格式，请检查输入', 'warning')
+                return
+            
+            # 格式化输出
+            hex_upper = [b.upper() for b in all_hex_bytes]
+            
+            result_lines = []
+            result_lines.append(f"=== 提取结果 ===")
+            result_lines.append(f"匹配行数: {matched_lines}")
+            result_lines.append(f"总字节数: {len(all_hex_bytes)}")
+            result_lines.append("")
+            result_lines.append("--- HEX 数据（空格分隔）---")
+            # 每行16个字节
+            for i in range(0, len(hex_upper), 16):
+                result_lines.append(' '.join(hex_upper[i:i+16]))
+            result_lines.append("")
+            result_lines.append("--- HEX 数据（无分隔）---")
+            result_lines.append(''.join(hex_upper))
+            result_lines.append("")
+            result_lines.append("--- HEX 数据（0x格式）---")
+            result_lines.append(', '.join(f'0x{b}' for b in hex_upper))
+            
+            self.resultEdit.setPlainText('\n'.join(result_lines))
+            self.show_info(f'成功提取 {len(all_hex_bytes)} 字节', 'success')
+            
+        except Exception as e:
+            self.show_info(f'提取失败: {str(e)}', 'error')
+    
+    def copy_result(self):
+        """复制结果到剪贴板"""
+        from PySide6.QtWidgets import QApplication
+        
+        result_text = self.resultEdit.toPlainText()
+        if not result_text:
+            self.show_info('没有可复制的内容', 'warning')
+            return
+        
+        # 提取空格分隔的HEX数据行
+        lines = result_text.split('\n')
+        hex_lines = []
+        in_hex_section = False
+        for line in lines:
+            if '空格分隔' in line:
+                in_hex_section = True
+                continue
+            if in_hex_section:
+                if line.startswith('---') or line == '':
+                    break
+                hex_lines.append(line)
+        
+        if hex_lines:
+            clipboard_text = ' '.join(hex_lines)
+        else:
+            clipboard_text = result_text
+        
+        clipboard = QApplication.clipboard()
+        clipboard.setText(clipboard_text)
+        self.show_info('已复制到剪贴板', 'success')
+    
+    def clear_all(self):
+        """清空所有内容"""
+        self.inputEdit.clear()
+        self.resultEdit.clear()
+    
+    def show_info(self, message: str, info_type: str = 'info'):
+        """显示信息提示"""
+        if info_type == 'success':
+            InfoBar.success(
+                title='成功',
+                content=message,
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+        elif info_type == 'warning':
+            InfoBar.warning(
+                title='提示',
+                content=message,
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2000,
+                parent=self
+            )
+        elif info_type == 'error':
+            InfoBar.error(
+                title='错误',
+                content=message,
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
+
+
 class ChecksumCalculatorDialog(QDialog):
     """校验码计算器对话框"""
     

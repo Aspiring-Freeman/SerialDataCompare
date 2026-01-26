@@ -15,7 +15,7 @@ from qfluentwidgets import (
     IconWidget, FluentIcon as FIF, isDarkTheme
 )
 
-from ui.tool_dialogs import HexAsciiConverterDialog, BaseConverterDialog, ChecksumCalculatorDialog
+from ui.tool_dialogs import HexAsciiConverterDialog, BaseConverterDialog, ChecksumCalculatorDialog, HexLogExtractorDialog
 
 
 class ToolCard(CardWidget):
@@ -134,6 +134,16 @@ class ToolsInterface(ScrollArea):
         self.checksumCard.toolClicked.connect(self.open_checksum_calculator)
         cardsLayout.addWidget(self.checksumCard)
         
+        # HEX日志提取器卡片
+        self.hexLogCard = ToolCard(
+            FIF.SCROLL,
+            'HEX日志提取',
+            '从串口日志中提取HEX数据帧',
+            self
+        )
+        self.hexLogCard.toolClicked.connect(self.open_hex_log_extractor)
+        cardsLayout.addWidget(self.hexLogCard)
+        
         # 预留更多工具位置
         cardsLayout.addStretch()
         
@@ -155,4 +165,9 @@ class ToolsInterface(ScrollArea):
     def open_checksum_calculator(self):
         """打开校验码计算器"""
         dialog = ChecksumCalculatorDialog(self.window())
+        dialog.show()
+    
+    def open_hex_log_extractor(self):
+        """打开HEX日志提取器"""
+        dialog = HexLogExtractorDialog(self.window())
         dialog.show()

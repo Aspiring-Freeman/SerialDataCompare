@@ -4,14 +4,15 @@
   "description": "压力监测仪上位结果查询解析协议",
   "frame_header": "68",
   "frame_tail": "16",
+  "frame_length": 83,
   "checksum_config": {
     "checksum_type": "累加和",
     "position": "帧尾前",
     "start_offset": 0,
     "end_offset": -1,
     "checksum_length": 1,
-    "checksum_start": 0,
-    "checksum_end": 0,
+    "checksum_position": 81,
+    "checksum_end": 81,
     "checksum_endianness": "little"
   },
   "fields": [
@@ -22,7 +23,8 @@
       "description": "",
       "order": 0,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "整包长度",
@@ -31,7 +33,8 @@
       "description": "",
       "order": 1,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "工位号",
@@ -40,7 +43,8 @@
       "description": "",
       "order": 2,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "3.6V电压高位",
@@ -49,7 +53,8 @@
       "description": "",
       "order": 3,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "3.6V电压低位",
@@ -58,7 +63,8 @@
       "description": "",
       "order": 4,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "3.6V模组电压高位",
@@ -67,7 +73,8 @@
       "description": "",
       "order": 5,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "3.6V模组电压低位",
@@ -76,7 +83,8 @@
       "description": "",
       "order": 6,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "3.6V电池电压高位",
@@ -85,7 +93,8 @@
       "description": "",
       "order": 7,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "3.6V电池电压低位",
@@ -94,7 +103,8 @@
       "description": "",
       "order": 8,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "3.3V_LDO高位",
@@ -103,7 +113,8 @@
       "description": "",
       "order": 9,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "3.3V_LDO低位",
@@ -112,7 +123,8 @@
       "description": "",
       "order": 10,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "静态功耗高位",
@@ -121,7 +133,8 @@
       "description": "",
       "order": 11,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "静态功耗低位",
@@ -130,7 +143,8 @@
       "description": "",
       "order": 12,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "运行功耗高位",
@@ -139,7 +153,8 @@
       "description": "",
       "order": 13,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "运行功耗低位",
@@ -148,36 +163,40 @@
       "description": "",
       "order": 14,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "IMEI号",
       "byte_count": 15,
-      "field_type": "bytes",
+      "field_type": "string",
       "description": "",
       "order": 15,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
     },
     {
       "name": "IMSI号",
       "byte_count": 15,
-      "field_type": "bytes",
+      "field_type": "string",
       "description": "",
       "order": 16,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
     },
     {
       "name": "ICCID号",
       "byte_count": 20,
-      "field_type": "bytes",
+      "field_type": "string",
       "description": "",
       "order": 17,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
     },
     {
@@ -187,7 +206,8 @@
       "description": "",
       "order": 18,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "flash检测",
@@ -196,7 +216,8 @@
       "description": "",
       "order": 19,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
       "name": "蓝牙检测",
@@ -205,61 +226,41 @@
       "description": "",
       "order": 20,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0
     },
     {
-      "name": "板载压力传感器低位",
-      "byte_count": 1,
-      "field_type": "bytes",
+      "name": "板载压力传感器",
+      "byte_count": 2,
+      "field_type": "uint16",
       "description": "",
       "order": 21,
       "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
     },
     {
-      "name": "板载压力传感器高位",
-      "byte_count": 1,
-      "field_type": "bytes",
-      "description": "",
-      "order": 22,
-      "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "外接压力传感器低位",
-      "byte_count": 1,
-      "field_type": "bytes",
+      "name": "外接压力传感器",
+      "byte_count": 2,
+      "field_type": "uint16",
       "description": "",
       "order": 23,
       "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "外接压力传感器高位",
-      "byte_count": 1,
-      "field_type": "bytes",
-      "description": "",
-      "order": 24,
-      "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
     },
     {
       "name": "程序版本字节1",
-      "byte_count": 1,
+      "byte_count": 2,
       "field_type": "bytes",
       "description": "",
       "order": 25,
       "length_field": null,
-      "locked": true
-    },
-    {
-      "name": "程序版本字节2",
-      "byte_count": 1,
-      "field_type": "bytes",
-      "description": "",
-      "order": 26,
-      "length_field": null,
-      "locked": true
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
     },
     {
       "name": "编译时间",
@@ -269,7 +270,21 @@
       "order": 27,
       "length_field": null,
       "locked": true,
+      "length_offset": 0,
       "endianness": "big"
+    },
+    {
+      "name": "累加和",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
     }
-  ]
+  ],
+  "basic_info_locked": true,
+  "checksum_locked": true,
+  "schema_version": "1.0"
 }

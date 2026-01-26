@@ -1,266 +1,24 @@
 {
-  "protocol_name": "威星浪花工装模块测试协议",
+  "protocol_name": "开机上告信息_1001",
   "version": "1.0",
-  "description": "威星浪花工装模块测试协议",
+  "description": "发送的协议用：68 00 00 00 01 00 00 68  04 0B 00 26 01 23 16 03  33 16 01 10 00 DA 77 16\n\n设置开机上告信息，这是写\n13个字节长度固定+数据域的信息=46个字节\n",
   "frame_header": "68",
   "frame_tail": "16",
-  "frame_length": 106,
+  "frame_length": 46,
   "checksum_config": {
     "checksum_type": "累加和",
     "position": "帧尾前",
     "start_offset": 0,
     "end_offset": -1,
     "checksum_length": 1,
-    "checksum_position": 104,
-    "checksum_end": 104,
-    "checksum_endianness": "little"
+    "checksum_position": 44,
+    "checksum_end": 44,
+    "checksum_endianness": "big"
   },
   "fields": [
     {
-      "name": "设备测试标识",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "整包长度",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "工位号",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "主电电压(供电电压)",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "little"
-    },
-    {
-      "name": "主电电压(协议获取)",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "little"
-    },
-    {
-      "name": "静态功耗",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "little"
-    },
-    {
-      "name": "满水功耗",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "big"
-    },
-    {
-      "name": "走水功耗",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "big"
-    },
-    {
-      "name": "备电/NB/扩频电压(供电电压)",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "little"
-    },
-    {
-      "name": "备电/NB/扩频电压(协议获取)",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "little"
-    },
-    {
-      "name": "备电/NB/扩频功耗",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "big"
-    },
-    {
-      "name": "蓝牙检测",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "flash检测",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "计量",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "红外通信",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "IMEI号",
-      "byte_count": 15,
-      "field_type": "string",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "big"
-    },
-    {
-      "name": "IMSI号",
-      "byte_count": 15,
-      "field_type": "string",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "big"
-    },
-    {
-      "name": "ICCID号",
-      "byte_count": 20,
-      "field_type": "string",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "big"
-    },
-    {
-      "name": "CSQ",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "阀门状态",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "阀门到位状态",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "EEPROM状态",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "GP30电压",
-      "byte_count": 2,
-      "field_type": "uint16",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0,
-      "endianness": "little"
-    },
-    {
-      "name": "loraEUI",
-      "byte_count": 16,
+      "name": "表号(AA)",
+      "byte_count": 6,
       "field_type": "bytes",
       "description": "",
       "order": 0,
@@ -270,7 +28,17 @@
       "endianness": "big"
     },
     {
-      "name": "强磁检测",
+      "name": "新的帧起始(68)",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "控制码(81读取返回)",
       "byte_count": 1,
       "field_type": "uint8",
       "description": "",
@@ -280,7 +48,29 @@
       "length_offset": 0
     },
     {
-      "name": "开盖",
+      "name": "数据域长度",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "数据内容：系统时钟",
+      "byte_count": 6,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "数据内容：设备类型(00)",
       "byte_count": 1,
       "field_type": "uint8",
       "description": "",
@@ -290,27 +80,7 @@
       "length_offset": 0
     },
     {
-      "name": "GPS模组状态",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "无磁模组信号强度",
-      "byte_count": 1,
-      "field_type": "uint8",
-      "description": "",
-      "order": 0,
-      "length_field": null,
-      "locked": true,
-      "length_offset": 0
-    },
-    {
-      "name": "校验码字段",
+      "name": "数据内容：数据标识1001",
       "byte_count": 2,
       "field_type": "bytes",
       "description": "",
@@ -321,7 +91,107 @@
       "endianness": "little"
     },
     {
-      "name": "程序版本号",
+      "name": "数据内容：帧序号(00)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：表具类型",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：是否带附件",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：主控板电压",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：模块状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：信号强度",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：连接状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：Sim卡状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：存贮状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：计量状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：软件版本",
       "byte_count": 2,
       "field_type": "bytes",
       "description": "",
@@ -329,7 +199,78 @@
       "length_field": null,
       "locked": true,
       "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "数据内容(有效信息）：RTC电池状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：温压状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：占位符（暂时不管，保留字）",
+      "byte_count": 10,
+      "field_type": "uint32",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
       "endianness": "big"
+    },
+    {
+      "name": "数据内容(有效信息）：开盖状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：倾斜开关状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容(有效信息）：蓝牙状态",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "累加和",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
     }
   ],
   "basic_info_locked": true,

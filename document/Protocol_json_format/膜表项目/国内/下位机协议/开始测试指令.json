@@ -1,0 +1,196 @@
+{
+  "protocol_name": "威星膜表上位机mes开始测试协议",
+  "version": "1.0",
+  "description": "国内膜表mes",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1,
+    "checksum_position": 4,
+    "checksum_end": 4,
+    "checksum_endianness": "big"
+  },
+  "fields": [
+    {
+      "name": "表号(AA)",
+      "byte_count": 6,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "新的帧起始(68)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "控制码(05)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据域长度",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "时间",
+      "byte_count": 6,
+      "field_type": "uint32",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "设备类型(00)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据标识",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "帧序号(00)",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "工位",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容0_77",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容1_00",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容2_00",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容3_50",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容4_02",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容5_05",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据内容6_00",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "累加和",
+      "byte_count": 1,
+      "field_type": "uint8",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    }
+  ],
+  "basic_info_locked": false,
+  "checksum_locked": false,
+  "schema_version": "1.0"
+}
