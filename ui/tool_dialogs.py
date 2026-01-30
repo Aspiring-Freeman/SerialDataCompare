@@ -482,7 +482,7 @@ class HexLogExtractorDialog(QDialog):
         self.viewLayout.addWidget(self.titleLabel)
         
         # 说明
-        self.descLabel = BodyLabel('从串口调试日志中提取 HEX 数据帧（支持 DGM_RX/DGM_TX 等格式）', self)
+        self.descLabel = BodyLabel('从串口调试日志中提取 HEX 数据帧（支持 DGM_RX/TX、短横线-、冒号:等分隔格式）', self)
         self.descLabel.setTextColor("#888888", "#888888")
         self.viewLayout.addWidget(self.descLabel)
         
@@ -497,10 +497,13 @@ class HexLogExtractorDialog(QDialog):
         
         self.inputEdit = TextEdit(self)
         self.inputEdit.setPlaceholderText(
-            '粘贴日志数据，支持格式如:\n'
-            '[12:13:39.223] RX ← D/HEX DGM_RX: 0000-0007: 68 01 80 16 00 00 00 68    h......h\n'
-            '[12:13:39.292] RX ← D/HEX DGM_RX: 0008-000F: 84 28 00 25 07 18 14 54    .(.%...T\n'
-            '...'
+            '粘贴日志数据，支持多种格式:\n\n'
+            '格式1 (DGM日志):\n'
+            '[12:13:39.223] RX ← D/HEX DGM_RX: 0000-0007: 68 01 80 16 00 00 00 68    h......h\n\n'
+            '格式2 (短横线分隔):\n'
+            '2026-01-30 16:41:24|INFO|SerialPort|发送指令：68-AA-AA-AA-AA-AA-68-05-12-D1-16\n\n'
+            '格式3 (冒号分隔):\n'
+            '68:AA:AA:AA:AA:AA:68:05:12:D1:16'
         )
         self.inputEdit.setMinimumHeight(150)
         inputLayout.addWidget(self.inputEdit)
@@ -568,35 +571,61 @@ class HexLogExtractorDialog(QDialog):
             return
         
         try:
-            # 匹配格式: [时间] RX/TX ← D/HEX DGM_RX/DGM_TX: 地址范围: HEX数据    ASCII表示
-            # 例如: [12:13:39.223] RX ← D/HEX DGM_RX: 0000-0007: 68 01 80 16 00 00 00 68    h......h
-            
-            # 正则模式：提取地址范围后的HEX数据（多个空格分隔的两位十六进制数）
-            pattern = r'[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}:\s*([0-9A-Fa-f]{2}(?:\s+[0-9A-Fa-f]{2})*)\s+'
-            
             all_hex_bytes = []
             lines = input_text.split('\n')
             matched_lines = 0
             
             for line in lines:
-                match = re.search(pattern, line)
+                line = line.strip()
+                if not line:
+                    continue
+                
+                hex_bytes_in_line = []
+                
+                # 模式1: DGM格式 - [时间] RX/TX ← D/HEX DGM_RX/DGM_TX: 地址范围: HEX数据    ASCII表示
+                # 例如: [12:13:39.223] RX ← D/HEX DGM_RX: 0000-0007: 68 01 80 16 00 00 00 68    h......h
+                pattern_dgm = r'[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}:\s*([0-9A-Fa-f]{2}(?:\s+[0-9A-Fa-f]{2})*)\s+'
+                match = re.search(pattern_dgm, line)
                 if match:
                     hex_part = match.group(1)
-                    # 提取所有十六进制字节
-                    hex_bytes = hex_part.split()
-                    all_hex_bytes.extend(hex_bytes)
-                    matched_lines += 1
-            
-            if not all_hex_bytes:
-                # 尝试更宽松的模式：直接提取连续的HEX字节
-                pattern2 = r':\s*([0-9A-Fa-f]{2}(?:\s+[0-9A-Fa-f]{2})+)\s+[\x00-\x7F]+$'
-                for line in lines:
-                    match = re.search(pattern2, line)
+                    hex_bytes_in_line = hex_part.split()
+                
+                # 模式2: 短横线分隔的HEX数据 (如: 68-AA-AA-AA-AA-AA-68-05-12-D1-16)
+                # 匹配日志中的HEX数据部分，通常在冒号后面
+                if not hex_bytes_in_line:
+                    # 尝试匹配冒号后的短横线分隔HEX数据
+                    pattern_dash = r'[：:]\s*([0-9A-Fa-f]{2}(?:-[0-9A-Fa-f]{2})+)\s*$'
+                    match = re.search(pattern_dash, line)
                     if match:
                         hex_part = match.group(1)
-                        hex_bytes = hex_part.split()
-                        all_hex_bytes.extend(hex_bytes)
-                        matched_lines += 1
+                        hex_bytes_in_line = hex_part.split('-')
+                    else:
+                        # 尝试匹配整行都是短横线分隔的HEX数据
+                        pattern_dash_full = r'^([0-9A-Fa-f]{2}(?:-[0-9A-Fa-f]{2})+)$'
+                        match = re.search(pattern_dash_full, line)
+                        if match:
+                            hex_part = match.group(1)
+                            hex_bytes_in_line = hex_part.split('-')
+                
+                # 模式3: 冒号分隔的HEX数据 (如: 68:AA:AA:AA:AA:AA:68)
+                if not hex_bytes_in_line:
+                    pattern_colon = r'^([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2})+)$'
+                    match = re.search(pattern_colon, line)
+                    if match:
+                        hex_part = match.group(1)
+                        hex_bytes_in_line = hex_part.split(':')
+                
+                # 模式4: 空格分隔的HEX数据（宽松匹配）
+                if not hex_bytes_in_line:
+                    pattern_space = r':\s*([0-9A-Fa-f]{2}(?:\s+[0-9A-Fa-f]{2})+)\s+[\x00-\x7F]+$'
+                    match = re.search(pattern_space, line)
+                    if match:
+                        hex_part = match.group(1)
+                        hex_bytes_in_line = hex_part.split()
+                
+                if hex_bytes_in_line:
+                    all_hex_bytes.extend(hex_bytes_in_line)
+                    matched_lines += 1
             
             if not all_hex_bytes:
                 self.show_info('未能识别日志格式，请检查输入', 'warning')
