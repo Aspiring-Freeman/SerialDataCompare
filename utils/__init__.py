@@ -10,7 +10,13 @@ from .helpers import (
     bytes_to_int,
     int_to_bytes,
     atomic_write_json,
-    atomic_write_text
+    atomic_write_text,
+    safe_load_json,
+    safe_move_file,
+    safe_move_directory,
+    preprocess_hex_input,
+    strip_json_comments,
+    load_json_with_comments
 )
 from .logger import Logger, LogLevel
 
@@ -22,6 +28,12 @@ __all__ = [
     'int_to_bytes',
     'atomic_write_json',
     'atomic_write_text',
+    'safe_load_json',
+    'safe_move_file',
+    'safe_move_directory',
+    'preprocess_hex_input',
+    'strip_json_comments',
+    'load_json_with_comments',
     'Logger',
     'LogLevel'
 ]

@@ -1,0 +1,127 @@
+{
+  "protocol_name": "Diaphragm meters",
+  "version": "1.0",
+  "description": "开关红外\nTX → 68 AA AA AA AA AA AA 68  04 17 00 25 07 18 11 01  53 08 01 10 00 AA AA AA  AA AA AA AA 25 07 18 11  01 53 F8 16\nRX ← 68 AA AA AA AA AA AA 68  84 21 00 25 07 18 11 01  53 84 01 10 00 00 61 3C  01 15 00 01 01 00 03 72  01 01 00 00 00 00 00 00  00 00 00 00 DB 16",
+  "frame_header": "68",
+  "frame_tail": "16",
+  "frame_length": 24,
+  "checksum_config": {
+    "checksum_type": "累加和",
+    "position": "帧尾前",
+    "start_offset": 0,
+    "end_offset": -1,
+    "checksum_length": 1,
+    "checksum_position": 22,
+    "checksum_end": 22,
+    "checksum_endianness": "big"
+  },
+  "fields": [
+    {
+      "name": "目标地址(表具编号)",
+      "byte_count": 6,
+      "field_type": "bytes",
+      "description": "",
+      "order": 0,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "帧起始符",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 6,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "控制码",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 7,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据域长度L",
+      "byte_count": 2,
+      "field_type": "uint16",
+      "description": "",
+      "order": 8,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "数据域:系统时钟",
+      "byte_count": 6,
+      "field_type": "bytes",
+      "description": "",
+      "order": 10,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "big"
+    },
+    {
+      "name": "数据域:设备数量/类型",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 16,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据域:数据标识",
+      "byte_count": 2,
+      "field_type": "bytes",
+      "description": "",
+      "order": 17,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0,
+      "endianness": "little"
+    },
+    {
+      "name": "数据域:帧序号(00)",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 19,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "数据域:数据内容",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 20,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    },
+    {
+      "name": "和校验",
+      "byte_count": 1,
+      "field_type": "bytes",
+      "description": "",
+      "order": 21,
+      "length_field": null,
+      "locked": true,
+      "length_offset": 0
+    }
+  ],
+  "basic_info_locked": false,
+  "checksum_locked": false,
+  "schema_version": "1.0"
+}

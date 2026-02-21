@@ -245,7 +245,9 @@ class DeleteProjectDialog(MessageBoxBase):
         msg_layout = QHBoxLayout()
         
         warning_label = BodyLabel("⚠️")
-        warning_label.setStyleSheet("font-size: 24px;")
+        font = warning_label.font()
+        font.setPixelSize(24)
+        warning_label.setFont(font)
         msg_layout.addWidget(warning_label)
         
         msg = BodyLabel(f"确定要删除项目 \"{self.project_name}\" 吗？")
@@ -554,7 +556,9 @@ class DeleteProtocolDialog(MessageBoxBase):
         msg_layout = QHBoxLayout()
         
         warning_label = BodyLabel("⚠️")
-        warning_label.setStyleSheet("font-size: 24px;")
+        font = warning_label.font()
+        font.setPixelSize(24)
+        warning_label.setFont(font)
         msg_layout.addWidget(warning_label)
         
         msg = BodyLabel(f"确定要删除协议 \"{self.protocol_name}\" 吗？")

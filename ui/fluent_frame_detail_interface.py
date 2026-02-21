@@ -13,34 +13,7 @@ from qfluentwidgets import (
     ScrollArea, CardWidget, TextEdit, TitleLabel, BodyLabel, StrongBodyLabel
 )
 
-
-# 预定义样式，避免重复创建字符串
-BYTE_STYLE_NORMAL = """
-    QLabel {
-        font-family: 'Consolas', 'Courier New', monospace;
-        font-size: 13px;
-        background: #F5F5F5;
-        border: 1px solid #D0D0D0;
-        border-radius: 3px;
-        color: #333333;
-    }
-    QLabel:hover {
-        background: #E8F4FD;
-        border-color: #0078D4;
-    }
-"""
-
-BYTE_STYLE_HIGHLIGHT = """
-    QLabel {
-        font-family: 'Consolas', 'Courier New', monospace;
-        font-size: 13px;
-        background: #FFD700;
-        border: 1px solid #FFC107;
-        border-radius: 3px;
-        color: #333;
-        font-weight: bold;
-    }
-"""
+from utils.theme_helper import ThemeHelper as TH
 
 
 class ClickableByteLabel(QLabel):
@@ -52,50 +25,42 @@ class ClickableByteLabel(QLabel):
         super().__init__(byte_value, parent)
         self.byte_index = byte_index
         self.is_highlighted = False
+        self._type_color = None  # 字段类型背景色
         
         self.setAlignment(Qt.AlignCenter)
         self.setCursor(QCursor(Qt.PointingHandCursor))
         self.setFixedSize(30, 24)
-        self.setStyleSheet(BYTE_STYLE_NORMAL)
+        self.setStyleSheet(TH.byte_style_normal())
+    
+    def set_type_color(self, color: str):
+        """设置字段类型背景色（第一层颜色）"""
+        self._type_color = color
+        if not self.is_highlighted:
+            if color:
+                self.setStyleSheet(TH.byte_style_typed(color))
+            else:
+                self.setStyleSheet(TH.byte_style_normal())
     
     def set_highlighted(self, highlighted: bool, color: str = None):
-        """设置高亮状态，避免不必要的更新"""
+        """设置高亮状态（统一金色高亮），避免不必要的更新"""
         if self.is_highlighted == highlighted:
             return  # 状态未变，不更新
         self.is_highlighted = highlighted
         if highlighted:
-            self.setStyleSheet(BYTE_STYLE_HIGHLIGHT)
+            self.setStyleSheet(TH.byte_style_selected('#FFD700'))
         else:
-            self.setStyleSheet(BYTE_STYLE_NORMAL)
+            # 恢复 zebra 背景色
+            self.set_type_color(self._type_color)
     
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.byte_index)
         super().mousePressEvent(event)
-# 预定义字段样式
-FIELD_STYLE_NORMAL = """
-    QFrame {
-        background: #F8F8F8;
-        border: 1px solid #E0E0E0;
-        border-radius: 6px;
-    }
-    QFrame:hover {
-        background: #E8F4FD;
-        border-color: #0078D4;
-    }
-"""
-
-FIELD_STYLE_HIGHLIGHT = """
-    QFrame {
-        background: #FFD700;
-        border: 2px solid #FFC107;
-        border-radius: 6px;
-    }
-"""
+# 注意: FIELD_STYLE_NORMAL / FIELD_STYLE_HIGHLIGHT 已改为通过 TH 动态获取
 
 
 class ClickableFieldLabel(QFrame):
-    """可点击的字段标签，支持高亮"""
+    """可点击的字段标签，支持两层颜色（类型背景+选中高亮）"""
     
     clicked = Signal(str)  # 发送字段名
     
@@ -103,6 +68,8 @@ class ClickableFieldLabel(QFrame):
         super().__init__(parent)
         self.field_name = field_name
         self.is_highlighted = False
+        self._type_color = None
+        self.highlight_color = "#FFD700"
         
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 6, 8, 6)
@@ -110,50 +77,70 @@ class ClickableFieldLabel(QFrame):
         
         # 字段名标签
         self.name_label = QLabel(f"🔹 {field_name}:")
-        self.name_label.setStyleSheet("font-weight: bold; color: #333333;")
+        self.name_label.setStyleSheet(TH.field_name_style())
         
         # 字段值标签
         self.value_label = QLabel(field_value)
         self.value_label.setWordWrap(True)
         self.value_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.value_label.setStyleSheet("color: #0078D4; font-family: 'Courier New', monospace;")
+        self.value_label.setStyleSheet(TH.accent_mono_style())
         
         layout.addWidget(self.name_label)
         layout.addWidget(self.value_label, 1)
         
         self.setCursor(QCursor(Qt.PointingHandCursor))
-        self.setStyleSheet(FIELD_STYLE_NORMAL)
+        self.setStyleSheet(TH.field_style_normal())
+    
+    def set_type_color(self, color: str):
+        """设置字段类型背景色（第一层颜色）"""
+        self._type_color = color
+        if not self.is_highlighted:
+            if color:
+                self.setStyleSheet(TH.field_style_typed(color))
+            else:
+                self.setStyleSheet(TH.field_style_normal())
     
     def set_highlighted(self, highlighted: bool, color: str = None):
-        """设置高亮状态，避免不必要的更新"""
+        """设置高亮状态（统一金色高亮），避免不必要的更新"""
         if self.is_highlighted == highlighted:
             return  # 状态未变，不更新
         self.is_highlighted = highlighted
         if highlighted:
-            self.setStyleSheet(FIELD_STYLE_HIGHLIGHT)
+            self.setStyleSheet(TH.field_style_selected('#FFD700'))
+            self.name_label.setStyleSheet("font-weight: bold; color: #333;")
             self.value_label.setStyleSheet("color: #333; font-family: 'Courier New', monospace;")
         else:
-            self.setStyleSheet(FIELD_STYLE_NORMAL)
-            self.value_label.setStyleSheet("color: #0078D4; font-family: 'Courier New', monospace;")
+            if self._type_color:
+                self.set_type_color(self._type_color)
+            else:
+                self.setStyleSheet(TH.field_style_normal())
+            self.name_label.setStyleSheet(TH.field_name_style())
+            self.value_label.setStyleSheet(TH.accent_mono_style())
     
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.field_name)
         super().mousePressEvent(event)
 class FrameDetailInterface(QWidget):
-    """帧详情界面 - 支持双向高亮联动"""
+    """帧详情界面 - 支持双向高亮联动 + 两层颜色体系"""
     
-    # 高亮颜色
+    # 高亮颜色（点击时的边框颜色）
     HIGHLIGHT_COLOR = "#FFD700"  # 金黄色高亮
+    HIGHLIGHT_BORDER_COLOR = "#FFA000"  # 深金色边框
     
-    def __init__(self, parent=None):
+    def __init__(self, color_config=None, parent=None):
         super().__init__(parent)
         self.setObjectName("frame_detail_interface")
+        
+        # 颜色配置（用于字段类型背景色）
+        self._color_config = color_config
         
         # 当前帧数据
         self.current_frame = None
         # 字段到字节位置的映射
         self.field_byte_positions = {}
+        # 字段类型映射（用于颜色查找）
+        self.field_types = {}
         # 字节标签列表
         self.byte_labels = []
         # 字段标签字典
@@ -166,11 +153,11 @@ class FrameDetailInterface(QWidget):
         # 滚动区域
         self.scroll = ScrollArea(self)
         self.scroll.setWidgetResizable(True)
-        self.scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
         
         # 滚动内容容器
         self.scroll_widget = QWidget()
         self.scroll.setWidget(self.scroll_widget)
+        self.scroll.enableTransparentBackground()
         
         # 主布局
         self.main_layout = QVBoxLayout(self.scroll_widget)
@@ -185,6 +172,11 @@ class FrameDetailInterface(QWidget):
         
         # 添加弹性空间
         self.main_layout.addStretch()
+        
+        # 安装事件过滤器：点击空白区域（卡片间隙/卡片内非交互区域）取消高亮
+        self.scroll_widget.installEventFilter(self)
+        for _card in (self.basic_card, self.data_card, self.fields_card, self.checksum_card):
+            _card.installEventFilter(self)
         
         # 设置滚动区域为主widget
         layout = QVBoxLayout(self)
@@ -201,13 +193,13 @@ class FrameDetailInterface(QWidget):
         # 标题和说明
         title_layout = QHBoxLayout()
         title = TitleLabel("📊 基本信息")
-        title.setStyleSheet("font-weight: bold; color: #0078D4;")
+        TH.apply_title_accent(title)
         title_layout.addWidget(title)
         title_layout.addStretch()
         
-        hint = BodyLabel("数据帧的基本属性")
-        hint.setStyleSheet("color: #606060; font-size: 13px;")
-        title_layout.addWidget(hint)
+        self._basic_hint = BodyLabel("数据帧的基本属性")
+        TH.apply_hint(self._basic_hint)
+        title_layout.addWidget(self._basic_hint)
         card_layout.addLayout(title_layout)
         
         # 信息网格
@@ -217,12 +209,12 @@ class FrameDetailInterface(QWidget):
         info_grid.setColumnStretch(3, 1)
         
         # 标签样式
-        label_style = "font-weight: bold; color: #333333; min-width: 100px;"
-        value_style = "color: #0078D4; font-size: 14px; padding: 5px; background: #F3F3F3; border-radius: 4px;"
+        label_style = TH.label_style()
+        value_style = TH.value_style()
         
         # 帧序号
         self.frame_num_label = BodyLabel("🔢 帧序号:")
-        self.frame_num_label.setStyleSheet(label_style)
+        TH.apply_label(self.frame_num_label)
         self.frame_num_value = BodyLabel("")
         self.frame_num_value.setStyleSheet(value_style)
         info_grid.addWidget(self.frame_num_label, 0, 0)
@@ -230,7 +222,7 @@ class FrameDetailInterface(QWidget):
         
         # 数据长度
         self.length_label = BodyLabel("📏 数据长度:")
-        self.length_label.setStyleSheet(label_style)
+        TH.apply_label(self.length_label)
         self.length_value = BodyLabel("")
         self.length_value.setStyleSheet(value_style)
         info_grid.addWidget(self.length_label, 0, 2)
@@ -238,7 +230,7 @@ class FrameDetailInterface(QWidget):
         
         # 起始位置
         self.start_label = BodyLabel("📍 起始位置:")
-        self.start_label.setStyleSheet(label_style)
+        TH.apply_label(self.start_label)
         self.start_value = BodyLabel("")
         self.start_value.setStyleSheet(value_style)
         info_grid.addWidget(self.start_label, 1, 0)
@@ -246,7 +238,7 @@ class FrameDetailInterface(QWidget):
         
         # 结束位置
         self.end_label = BodyLabel("🏁 结束位置:")
-        self.end_label.setStyleSheet(label_style)
+        TH.apply_label(self.end_label)
         self.end_value = BodyLabel("")
         self.end_value.setStyleSheet(value_style)
         info_grid.addWidget(self.end_label, 1, 2)
@@ -265,13 +257,13 @@ class FrameDetailInterface(QWidget):
         # 标题和说明
         title_layout = QHBoxLayout()
         title = TitleLabel("📦 原始数据")
-        title.setStyleSheet("font-weight: bold; color: #0078D4;")
+        TH.apply_title_accent(title)
         title_layout.addWidget(title)
         title_layout.addStretch()
         
-        hint = BodyLabel("点击字节/字段高亮，再次点击或点击空白取消")
-        hint.setStyleSheet("color: #606060; font-size: 13px;")
-        title_layout.addWidget(hint)
+        self._data_hint = BodyLabel("点击字节/字段高亮，再次点击或点击空白取消")
+        TH.apply_hint(self._data_hint)
+        title_layout.addWidget(self._data_hint)
         card_layout.addLayout(title_layout)
         
         # 字节网格容器
@@ -286,17 +278,7 @@ class FrameDetailInterface(QWidget):
         self.data_text = TextEdit()
         self.data_text.setReadOnly(True)
         self.data_text.setMinimumHeight(60)
-        self.data_text.setStyleSheet("""
-            QTextEdit {
-                font-family: 'Courier New', monospace;
-                font-size: 13px;
-                background: #F8F8F8;
-                border: 1px solid #E0E0E0;
-                border-radius: 6px;
-                padding: 10px;
-                color: #2B579A;
-            }
-        """)
+        self.data_text.setStyleSheet(TH.data_textbox_style())
         self.data_text.hide()  # 默认隐藏
         card_layout.addWidget(self.data_text)
         
@@ -304,13 +286,13 @@ class FrameDetailInterface(QWidget):
         desc_layout = QHBoxLayout()
         desc_layout.setSpacing(20)
         
-        desc1 = BodyLabel("💡 点击字节或字段高亮")
-        desc1.setStyleSheet("color: #606060; font-size: 12px;")
-        desc_layout.addWidget(desc1)
+        self._desc1 = BodyLabel("💡 点击字节或字段高亮")
+        TH.apply_hint(self._desc1, pixel_size=12)
+        desc_layout.addWidget(self._desc1)
         
-        desc2 = BodyLabel("📋 再次点击或点空白取消")
-        desc2.setStyleSheet("color: #606060; font-size: 12px;")
-        desc_layout.addWidget(desc2)
+        self._desc2 = BodyLabel("📋 再次点击或点空白取消")
+        TH.apply_hint(self._desc2, pixel_size=12)
+        desc_layout.addWidget(self._desc2)
         
         desc_layout.addStretch()
         card_layout.addLayout(desc_layout)
@@ -327,13 +309,13 @@ class FrameDetailInterface(QWidget):
         # 标题和说明
         title_layout = QHBoxLayout()
         title = TitleLabel("🔍 解析字段")
-        title.setStyleSheet("font-weight: bold; color: #0078D4;")
+        TH.apply_title_accent(title)
         title_layout.addWidget(title)
         title_layout.addStretch()
         
-        hint = BodyLabel("根据协议配置解析出的各个字段值")
-        hint.setStyleSheet("color: #606060; font-size: 13px;")
-        title_layout.addWidget(hint)
+        self._fields_hint = BodyLabel("根据协议配置解析出的各个字段值")
+        TH.apply_hint(self._fields_hint)
+        title_layout.addWidget(self._fields_hint)
         card_layout.addLayout(title_layout)
         
         # 字段网格容器
@@ -345,7 +327,7 @@ class FrameDetailInterface(QWidget):
         
         # 空状态提示
         self.no_fields_label = BodyLabel("暂无解析字段")
-        self.no_fields_label.setStyleSheet("color: #999999; font-style: italic; padding: 20px;")
+        TH.apply_no_data(self.no_fields_label)
         self.no_fields_label.setAlignment(Qt.AlignCenter)
         card_layout.addWidget(self.no_fields_label)
         
@@ -361,13 +343,13 @@ class FrameDetailInterface(QWidget):
         # 标题和说明
         title_layout = QHBoxLayout()
         title = TitleLabel("✔️ 校验信息")
-        title.setStyleSheet("font-weight: bold; color: #0078D4;")
+        TH.apply_title_accent(title)
         title_layout.addWidget(title)
         title_layout.addStretch()
         
-        hint = BodyLabel("数据帧的校验码验证结果")
-        hint.setStyleSheet("color: #606060; font-size: 13px;")
-        title_layout.addWidget(hint)
+        self._checksum_hint = BodyLabel("数据帧的校验码验证结果")
+        TH.apply_hint(self._checksum_hint)
+        title_layout.addWidget(self._checksum_hint)
         card_layout.addLayout(title_layout)
         
         # 校验信息网格
@@ -376,28 +358,26 @@ class FrameDetailInterface(QWidget):
         check_grid.setColumnStretch(1, 1)
         check_grid.setColumnStretch(3, 1)
         
-        label_style = "font-weight: bold; color: #333333; min-width: 100px;"
-        
         # 校验结果
         self.valid_label = BodyLabel("🎯 校验结果:")
-        self.valid_label.setStyleSheet(label_style)
+        TH.apply_label(self.valid_label)
         self.valid_value = BodyLabel("")
         check_grid.addWidget(self.valid_label, 0, 0)
         check_grid.addWidget(self.valid_value, 0, 1)
         
         # 计算校验
         self.expected_label = BodyLabel("📝 计算校验:")
-        self.expected_label.setStyleSheet(label_style)
+        TH.apply_label(self.expected_label)
         self.expected_value = BodyLabel("")
-        self.expected_value.setStyleSheet("color: #0078D4; font-family: 'Courier New', monospace;")
+        TH.apply_accent_mono(self.expected_value)
         check_grid.addWidget(self.expected_label, 1, 0)
         check_grid.addWidget(self.expected_value, 1, 1)
         
         # 帧内校验
         self.actual_label = BodyLabel("🔢 帧内校验:")
-        self.actual_label.setStyleSheet(label_style)
+        TH.apply_label(self.actual_label)
         self.actual_value = BodyLabel("")
-        self.actual_value.setStyleSheet("color: #0078D4; font-family: 'Courier New', monospace;")
+        TH.apply_accent_mono(self.actual_value)
         check_grid.addWidget(self.actual_label, 1, 2)
         check_grid.addWidget(self.actual_value, 1, 3)
         
@@ -405,7 +385,7 @@ class FrameDetailInterface(QWidget):
         
         # 错误信息
         self.error_label = BodyLabel("")
-        self.error_label.setStyleSheet("color: #D13438; background: #FFF4F4; padding: 10px; border-radius: 4px; margin-top: 10px;")
+        self.error_label.setStyleSheet(TH.error_label_style())
         self.error_label.setWordWrap(True)
         self.error_label.hide()
         
@@ -416,6 +396,7 @@ class FrameDetailInterface(QWidget):
     def show_frame(self, frame):
         """显示帧详情"""
         self.current_frame = frame
+        self.current_highlighted_field = None  # 重置高亮状态，防止帧切换后同名字段首次点击无反应
         
         # 处理原始数据显示
         raw_hex = frame.raw_data.hex().upper() if isinstance(frame.raw_data, bytes) else str(frame.raw_data)
@@ -431,18 +412,22 @@ class FrameDetailInterface(QWidget):
         
         # 保存字段位置信息
         self.field_byte_positions = getattr(frame, 'field_byte_positions', {})
+        # 保存字段类型信息（用于两层颜色体系）
+        self.field_types = getattr(frame, 'field_types', {})
         
         # 创建交互式字节视图（如果数据不太长）
         if len(frame.raw_data) <= 128:
             self._create_interactive_bytes(frame.raw_data)
             self.bytes_container.show()
             self.data_text.hide()
+            self._data_hint.setText("点击字节/字段高亮，再次点击或点击空白取消")
         else:
             # 数据太长，使用传统文本显示
             formatted_hex = self._format_hex_data(raw_hex)
             self.data_text.setPlainText(formatted_hex)
             self.bytes_container.hide()
             self.data_text.show()
+            self._data_hint.setText("⚠️ 数据较长(>128字节)，字节高亮联动不可用")
         
         # 更新解析字段
         self._update_fields(frame)
@@ -452,11 +437,17 @@ class FrameDetailInterface(QWidget):
     
     def _create_interactive_bytes(self, raw_data: bytes):
         """创建交互式字节视图（带地址偏移列）"""
-        # 清空现有字节标签
+        # 清空现有字节标签（先断开信号防止 deleteLater 窗口期误触发）
         while self.bytes_layout.count():
             item = self.bytes_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                if hasattr(w, 'clicked'):
+                    try:
+                        w.clicked.disconnect()
+                    except (RuntimeError, TypeError):
+                        pass
+                w.deleteLater()
         
         self.byte_labels.clear()
         
@@ -473,14 +464,7 @@ class FrameDetailInterface(QWidget):
             # 每行开头添加地址偏移标签
             if i % bytes_per_row == 0:
                 addr_label = QLabel(f"{row * bytes_per_row:04X}:")
-                addr_label.setStyleSheet("""
-                    font-family: 'Consolas', 'Courier New', monospace;
-                    font-size: 13px;
-                    font-weight: bold;
-                    color: #0078D4;
-                    padding: 3px 8px 3px 3px;
-                    min-width: 50px;
-                """)
+                addr_label.setStyleSheet(TH.addr_label_style())
                 addr_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 self.bytes_layout.addWidget(addr_label, row, 0)
             
@@ -490,7 +474,8 @@ class FrameDetailInterface(QWidget):
             self.bytes_layout.addWidget(label, row, col)
             self.byte_labels.append(label)
         
-        # 默认不高亮任何字节（灰色背景）
+        # 应用字段类型背景色到字节标签
+        self._apply_type_colors_to_bytes()
     
     def _format_hex_data(self, hex_str):
         """格式化十六进制数据，每行16字节，带地址偏移"""
@@ -525,11 +510,17 @@ class FrameDetailInterface(QWidget):
     
     def _update_fields(self, frame):
         """更新解析字段显示 - 支持交互式高亮和缩放值显示"""
-        # 清空现有字段
+        # 清空现有字段（先断开信号防止 deleteLater 窗口期误触发）
         while self.fields_grid.count():
             item = self.fields_grid.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                if hasattr(w, 'clicked'):
+                    try:
+                        w.clicked.disconnect()
+                    except (RuntimeError, TypeError):
+                        pass
+                w.deleteLater()
         
         self.field_widgets.clear()
         
@@ -564,9 +555,9 @@ class FrameDetailInterface(QWidget):
             field_widget = ClickableFieldLabel(key, formatted_value)
             field_widget.clicked.connect(self._on_field_clicked)
             
-            # 如果有颜色分配，设置背景色
+            # 应用 zebra 背景色
             if key in self.field_colors:
-                field_widget.highlight_color = self.field_colors[key]
+                field_widget.set_type_color(self.field_colors[key])
             
             self.field_widgets[key] = field_widget
             
@@ -580,19 +571,28 @@ class FrameDetailInterface(QWidget):
                 row += 1
     
     def _update_checksum(self, frame):
-        """更新校验信息"""
+        """更新校验信息（含智能诊断提示）"""
         if frame.expected_checksum is not None:
             # 校验结果
             if frame.checksum_valid:
                 self.valid_value.setText("✅ 校验通过")
-                self.valid_value.setStyleSheet("color: #107C10; font-weight: bold; font-size: 14px;")
+                TH.apply_checksum_pass(self.valid_value)
             else:
                 self.valid_value.setText("❌ 校验失败")
-                self.valid_value.setStyleSheet("color: #D13438; font-weight: bold; font-size: 14px;")
+                TH.apply_checksum_fail(self.valid_value)
             
             # 期望和实际校验值
             self.expected_value.setText(f"0x{frame.expected_checksum:02X}")
             self.actual_value.setText(f"0x{frame.actual_checksum:02X}")
+            
+            # 校验失败时添加智能诊断提示
+            if not frame.checksum_valid:
+                hints = self._generate_checksum_hints(frame)
+                if hints:
+                    hint_text = "💡 可能原因:\n" + "\n".join(f"  • {h}" for h in hints)
+                    self.error_label.setText(hint_text)
+                    self.error_label.setStyleSheet(TH.warning_label_style())  # 复杂样式保留 setStyleSheet
+                    self.error_label.show()
             
             # 显示卡片
             self.checksum_card.show()
@@ -603,18 +603,78 @@ class FrameDetailInterface(QWidget):
         # 错误信息
         if frame.has_error:
             self.error_label.setText(f"⚠️ 错误: {frame.error_message}")
+            self.error_label.setStyleSheet(TH.error_label_style())  # 复杂样式保留 setStyleSheet
             self.error_label.show()
-        else:
+        elif frame.checksum_valid or frame.expected_checksum is None:
             self.error_label.hide()
+    
+    def _generate_checksum_hints(self, frame) -> list:
+        """
+        根据校验失败的数据生成诊断提示
+        
+        分析策略:
+        1. 字节序方向是否颠倒
+        2. 校验范围是否可能偏移 ±1
+        """
+        hints = []
+        expected = frame.expected_checksum
+        actual = frame.actual_checksum
+        
+        if expected is None or actual is None:
+            return hints
+        
+        # 检查字节序颠倒（2字节校验码常见）
+        if expected > 0xFF or actual > 0xFF:
+            # 交换高低字节
+            expected_swapped = ((expected & 0xFF) << 8) | ((expected >> 8) & 0xFF)
+            if expected_swapped == actual:
+                hints.append("计算结果与帧内校验码字节序相反，请检查校验码字节序配置（大端/小端）")
+        
+        # 检查差值为一个固定偏移（可能是校验范围偏移±1）
+        diff = abs(expected - actual)
+        if 1 <= diff <= 5:
+            hints.append(f"计算值与帧内值仅差 {diff}，可能是校验起始/结束位置偏差 1 字节")
+        
+        # 如果两者完全不同，给出通用提示
+        if not hints:
+            hints.append("请确认校验算法类型、校验范围和校验码位置是否正确")
+            hints.append("可尝试调整校验起始/结束位置，或切换校验算法")
+        
+        return hints
     
     # ============ 双向高亮联动方法 ============
     
+    def _apply_type_colors_to_bytes(self):
+        """将字段类型背景色应用到对应的字节标签，并在字段边界添加分隔线"""
+        # 构建每个字节所属的字段索引 (用于边界检测)
+        field_names = list(self.field_byte_positions.keys())
+        byte_field_idx = {}  # byte_index → field_index
+        for idx, (field_name, (start, end)) in enumerate(self.field_byte_positions.items()):
+            for i in range(start, end):
+                byte_field_idx[i] = idx
+        
+        for field_name, (start, end) in self.field_byte_positions.items():
+            color = self.field_colors.get(field_name)
+            if color:
+                for i in range(max(0, start), min(end, len(self.byte_labels))):
+                    self.byte_labels[i].set_type_color(color)
+    
     def _assign_field_colors(self):
-        """为每个字段分配颜色（简化版本：所有字段使用统一的高亮颜色）"""
+        """
+        为每个字段分配颜色（Zebra Striping 方案）
+        
+        正常态: 相邻字段使用交替浅色底色，清晰区分字段边界
+        选中态: 点击时统一使用金色高亮
+        """
         self.field_colors.clear()
-        # 简化方案：所有字段点击时使用统一的金黄色高亮
-        for field_name in self.field_byte_positions.keys():
-            self.field_colors[field_name] = self.HIGHLIGHT_COLOR
+        
+        field_names = list(self.field_byte_positions.keys())
+        
+        for idx, field_name in enumerate(field_names):
+            if idx % 2 == 0:
+                self.field_colors[field_name] = TH.zebra_even_bg()
+            else:
+                self.field_colors[field_name] = TH.zebra_odd_bg()
     
     def _get_field_at_byte(self, byte_index: int) -> str:
         """获取指定字节位置对应的字段名"""
@@ -680,13 +740,52 @@ class FrameDetailInterface(QWidget):
                 self._highlight_field(field_name, True)
                 self.current_highlighted_field = field_name
     
+    def eventFilter(self, watched, event):
+        """事件过滤器 - 点击卡片/滚动区域空白处取消高亮
+        
+        只在点击目标是 watched 自身（非子控件）时才清除高亮，
+        避免拦截 ClickableByteLabel / ClickableFieldLabel 的正常点击。
+        """
+        from PySide6.QtCore import QEvent
+        if (event.type() == QEvent.MouseButtonPress
+                and event.button() == Qt.LeftButton
+                and self.current_highlighted_field):
+            # 检查点击的直接子控件——如果点击在交互标签上则不清除
+            child = watched.childAt(event.pos())
+            if child is None or not isinstance(child, (ClickableByteLabel, ClickableFieldLabel)):
+                # 也排除 ClickableFieldLabel 内部的 QLabel 子控件
+                parent = child.parent() if child else None
+                if not isinstance(parent, (ClickableByteLabel, ClickableFieldLabel)):
+                    self._clear_all_highlights()
+                    self.current_highlighted_field = None
+        return super().eventFilter(watched, event)
+
     def mousePressEvent(self, event):
-        """点击空白区域取消高亮"""
-        # 调用父类方法
+        """点击空白区域取消高亮（兜底）"""
         super().mousePressEvent(event)
-        # 检查点击位置是否在某个子控件上
-        child = self.childAt(event.pos())
-        # 只有当点击的是真正的空白区域（不是子控件）时才取消高亮
-        if child is None and self.current_highlighted_field:
-            self._clear_all_highlights()
-            self.current_highlighted_field = None
+        if event.button() == Qt.LeftButton and self.current_highlighted_field:
+            child = self.childAt(event.pos())
+            if child is None:
+                self._clear_all_highlights()
+                self.current_highlighted_field = None
+
+    # ============ 主题刷新 ============
+
+    def _refresh_styles(self):
+        """主题切换后刷新所有样式
+        
+        注: FluentLabelBase 通过 setTextColor 设置的颜色会自动跟随主题，
+        仅 value_style 等复杂样式 (含 background/padding) 需要手动刷新。
+        """
+        # value_style 含 background/padding，需要手动刷新 (setStyleSheet)
+        value_style = TH.value_style()
+        for lbl in (self.frame_num_value, self.length_value,
+                    self.start_value, self.end_value):
+            lbl.setStyleSheet(value_style)
+
+        # QTextEdit 不是 FluentLabelBase，需要手动刷新
+        self.data_text.setStyleSheet(TH.data_textbox_style())
+
+        # 如果有帧数据，刷新交互式字节视图 (ClickableByteLabel / ClickableFieldLabel 是 QLabel/QFrame)
+        if self.current_frame:
+            self.show_frame(self.current_frame)

@@ -145,8 +145,19 @@ class AnalysisHistoryDB:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # 插入主记录
+                # 去重：如果最近5秒内有相同协议+相同数据的记录，跳过插入
                 timestamp = datetime.now().isoformat()
+                cursor.execute('''
+                    SELECT id FROM analysis_history 
+                    WHERE protocol_name = ? AND input_data = ?
+                    AND timestamp > datetime(?, '-5 seconds')
+                    ORDER BY id DESC LIMIT 1
+                ''', (protocol_name, input_data[:500] + '...' if len(input_data) > 500 else input_data, timestamp))
+                existing = cursor.fetchone()
+                if existing:
+                    return existing[0]
+                
+                # 插入主记录
                 # 截断长数据
                 truncated_data = input_data[:500] + '...' if len(input_data) > 500 else input_data
                 
@@ -408,7 +419,7 @@ class AnalysisHistoryDB:
     
     def migrate_from_json(self, json_path: str) -> int:
         """
-        从旧的JSON格式迁移数据
+        从旧的JSON格式迁移数据（兼容 v1 list 和 v2 {schema_version, records} 格式）
         
         Args:
             json_path: JSON文件路径
@@ -423,11 +434,18 @@ class AnalysisHistoryDB:
             with open(json_path, 'r', encoding='utf-8') as f:
                 json_data = json.load(f)
             
-            if not isinstance(json_data, list):
+            # 兼容 v2 格式: {schema_version: 2, records: [...]}
+            if isinstance(json_data, dict):
+                records = json_data.get('records', [])
+                if not isinstance(records, list):
+                    return 0
+            elif isinstance(json_data, list):
+                records = json_data
+            else:
                 return 0
             
             count = 0
-            for record in json_data:
+            for record in records:
                 self.add_analysis(
                     protocol_name=record.get('protocol_name', '未知'),
                     input_data=record.get('input_data', ''),

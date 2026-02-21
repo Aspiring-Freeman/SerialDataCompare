@@ -10,7 +10,7 @@ from typing import Optional, Tuple
 from models import ProtocolConfig
 from core.protocol_converter import ProtocolConverter
 from core.protocol_validator import ProtocolValidator
-from utils import atomic_write_json
+from utils import atomic_write_json, strip_json_comments
 
 
 class ProtocolManager:
@@ -54,7 +54,11 @@ class ProtocolManager:
                 return None, f"文件不存在: {file_path}"
             
             with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+                raw_text = f.read()
+            
+            # 预处理：移除 // 注释和尾逗号（用户手写 JSON 可能包含）
+            cleaned_text = strip_json_comments(raw_text)
+            data = json.loads(cleaned_text)
             
             # JSON Schema验证
             warning_msg = ""

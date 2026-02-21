@@ -11,6 +11,8 @@ from qfluentwidgets import (
     TitleLabel, FluentIcon as FIF, InfoBar, InfoBarPosition
 )
 
+from utils.theme_helper import ThemeHelper as TH
+
 
 class LogInterface(QWidget):
     """日志界面"""
@@ -64,6 +66,8 @@ class LogInterface(QWidget):
         self.log_text = TextEdit()
         self.log_text.setReadOnly(True)
         self.log_text.setMinimumHeight(600)
+        # 限制最大行数，防止长时间运行后内存膨胀和界面卡顿
+        self.log_text.document().setMaximumBlockCount(2000)
         card_layout.addWidget(self.log_text)
         
         self.layout().addWidget(self.log_card)
@@ -73,13 +77,8 @@ class LogInterface(QWidget):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         # 根据级别设置颜色
-        color_map = {
-            "DEBUG": "#808080",
-            "INFO": "#000000",
-            "WARNING": "#FF8C00",
-            "ERROR": "#DC143C"
-        }
-        color = color_map.get(level, "#000000")
+        color_map = TH.log_color_map()
+        color = color_map.get(level, TH.info_log_color())
         
         log_html = f'<span style="color: {color}">[{timestamp}] [{level}] {message}</span><br>'
         self.log_text.append(log_html)

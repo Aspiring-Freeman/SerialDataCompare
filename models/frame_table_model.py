@@ -127,7 +127,11 @@ class FrameTableModel(QAbstractTableModel):
                 return QBrush(QColor(0, 120, 212, 50))  # 半透明蓝色
             # 交替行颜色
             if self._alternate_row_colors and row % 2 == 1:
-                return QBrush(QColor(245, 245, 245))
+                from qfluentwidgets import isDarkTheme
+                if isDarkTheme():
+                    return QBrush(QColor(255, 255, 255, 15))  # 深色主题：微亮
+                else:
+                    return QBrush(QColor(0, 0, 0, 10))  # 浅色主题：微暗
         
         elif role == Qt.ForegroundRole:
             # 校验失败的帧显示红色

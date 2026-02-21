@@ -7,7 +7,7 @@ from .checksum import ChecksumCalculator, ChecksumValidator, calculate_checksum,
 from .parser import DataParser
 from .protocol_manager import ProtocolManager
 from .color_config import ColorConfig, ColorConfigValidator, ColorValidationError
-from .protocol_validator import ProtocolValidator, ValidationError
+from .protocol_validator import ProtocolValidator, ValidationError, ValidationSeverity
 from .analysis_history import AnalysisHistory
 from .analysis_history_db import AnalysisHistoryDB
 from .exceptions import (
@@ -39,6 +39,7 @@ __all__ = [
     'ProtocolManager',
     'ProtocolValidator',
     'ValidationError',
+    'ValidationSeverity',
     # 会话
     'AnalysisSession',
     'SessionManager',

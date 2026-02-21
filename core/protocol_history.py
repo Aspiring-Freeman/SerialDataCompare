@@ -8,7 +8,7 @@ import os
 from typing import List, Dict
 from pathlib import Path
 
-from utils import atomic_write_json
+from utils import atomic_write_json, safe_load_json
 
 
 class ProtocolHistory:
@@ -33,17 +33,13 @@ class ProtocolHistory:
         return str(config_dir / 'protocol_history.json')
     
     def _load_history(self) -> List[Dict[str, str]]:
-        """加载历史记录"""
-        if not os.path.exists(self.history_file):
+        """加载历史记录（带备份恢复）"""
+        data = safe_load_json(self.history_file, default=None)
+        if data is None:
             return []
-        
-        try:
-            with open(self.history_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                return data.get('history', [])
-        except Exception as e:
-            print(f"加载历史记录失败: {e}")
-            return []
+        if isinstance(data, dict):
+            return data.get('history', [])
+        return []
     
     def _save_history(self):
         """保存历史记录 - 使用原子写入确保数据安全"""

@@ -2,6 +2,7 @@
 """
 协议配置界面 - Fluent Design
 """
+import json
 import os
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
 from PySide6.QtCore import Signal, Qt
@@ -16,6 +17,7 @@ from qfluentwidgets import (
 
 from models import ProtocolConfig, FieldDefinition, ChecksumConfig, ChecksumType, FieldType, Endianness
 from ui.protocol_history_dialog import ProtocolHistoryDialog
+from utils.theme_helper import ThemeHelper as TH
 
 
 class ProtocolInterface(QWidget):
@@ -32,6 +34,9 @@ class ProtocolInterface(QWidget):
         # 当前协议文件路径（用于记忆加载/保存位置）
         self.current_file_path: str = ""
         
+        # 保存已加载协议的原始字段定义（用于保存时保留UI无法编辑的高级属性）
+        self._loaded_field_defs: dict = {}  # {field_name: FieldDefinition}
+        
         # 主布局
         main_layout = QVBoxLayout(self)
         main_layout.setSpacing(20)
@@ -40,7 +45,6 @@ class ProtocolInterface(QWidget):
         # 创建滚动区域
         scroll = ScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea{background: transparent; border: none}")
         
         # 滚动区域内容
         self.scroll_widget = QWidget()
@@ -54,8 +58,9 @@ class ProtocolInterface(QWidget):
         self.create_checksum_card()
         self.create_action_buttons()
         
-        # 设置滚动区域
+        # 设置滚动区域（enableTransparentBackground 须在 setWidget 之后调用）
         scroll.setWidget(self.scroll_widget)
+        scroll.enableTransparentBackground()
         main_layout.addWidget(scroll)
     
     def create_basic_info_card(self):
@@ -108,7 +113,7 @@ class ProtocolInterface(QWidget):
         header_label = BodyLabel("帧头 (Hex):")
         header_label.setFixedWidth(120)
         self.header_edit = LineEdit()
-        self.header_edit.setPlaceholderText("例如: AA BB")
+        self.header_edit.setPlaceholderText("例如: 68 / AA BB（留空=不使用帧头定位）")
         self.header_edit.setMinimumWidth(300)
         header_layout.addWidget(header_label)
         header_layout.addWidget(self.header_edit, 1)
@@ -120,7 +125,7 @@ class ProtocolInterface(QWidget):
         footer_label = BodyLabel("帧尾 (Hex):")
         footer_label.setFixedWidth(120)
         self.footer_edit = LineEdit()
-        self.footer_edit.setPlaceholderText("例如: 0D 0A")
+        self.footer_edit.setPlaceholderText("例如: 16 / 0D 0A（留空=不使用帧尾定位）")
         self.footer_edit.setMinimumWidth(300)
         footer_layout.addWidget(footer_label)
         footer_layout.addWidget(self.footer_edit, 1)
@@ -253,11 +258,11 @@ class ProtocolInterface(QWidget):
         checksum_pos_label = BodyLabel("校验码位置:")
         checksum_pos_label.setFixedWidth(120)
         self.checksum_byte_position = SpinBox()
-        self.checksum_byte_position.setRange(0, 1000)
+        self.checksum_byte_position.setRange(0, 1000)  # 0=自动, 1+=第N字节
         self.checksum_byte_position.setValue(0)
         self.checksum_byte_position.setMinimumWidth(100)
-        checksum_pos_help = BodyLabel("(从0开始的字节索引)")
-        checksum_pos_help.setStyleSheet("color: #999999;")
+        checksum_pos_help = BodyLabel("(0=自动, 1=第1字节, 2=第2字节…)")
+        TH.apply_help_text(checksum_pos_help)
         checksum_pos_layout.addWidget(checksum_pos_label)
         checksum_pos_layout.addWidget(self.checksum_byte_position)
         checksum_pos_layout.addWidget(checksum_pos_help)
@@ -277,7 +282,7 @@ class ProtocolInterface(QWidget):
         self.checksum_length.setValue(1)
         self.checksum_length.setMinimumWidth(100)
         checksum_len_help = BodyLabel("(字节数)")
-        checksum_len_help.setStyleSheet("color: #999999;")
+        TH.apply_help_text(checksum_len_help)
         checksum_len_layout.addWidget(checksum_len_label)
         checksum_len_layout.addWidget(self.checksum_length)
         checksum_len_layout.addWidget(checksum_len_help)
@@ -297,7 +302,7 @@ class ProtocolInterface(QWidget):
         self.checksum_endianness.setCurrentIndex(0)  # 默认小端（MODBUS常用）
         self.checksum_endianness.setMinimumWidth(200)
         checksum_endian_help = BodyLabel("(如CRC16 0x1234: 小端=34 12, 大端=12 34)")
-        checksum_endian_help.setStyleSheet("color: #999999;")
+        TH.apply_help_text(checksum_endian_help)
         checksum_endian_layout.addWidget(checksum_endian_label)
         checksum_endian_layout.addWidget(self.checksum_endianness)
         checksum_endian_layout.addWidget(checksum_endian_help)
@@ -313,7 +318,7 @@ class ProtocolInterface(QWidget):
         self.checksum_link_field.setPlaceholderText("输入字段名以同步长度和字节序，留空则自动匹配")
         self.checksum_link_field.setMinimumWidth(300)
         link_field_help = BodyLabel("(与上方字段定义联动)")
-        link_field_help.setStyleSheet("color: #999999;")
+        TH.apply_help_text(link_field_help)
         link_field_layout.addWidget(link_field_label)
         link_field_layout.addWidget(self.checksum_link_field, 1)
         link_field_layout.addWidget(link_field_help)
@@ -328,11 +333,14 @@ class ProtocolInterface(QWidget):
         start_label = BodyLabel("校验起始位置:")
         start_label.setFixedWidth(120)
         self.checksum_start = SpinBox()
-        self.checksum_start.setRange(0, 1000)
+        # 添加 Fluent 风格工具提示
+        from ui.fluent import set_fluent_tooltip
+        set_fluent_tooltip(self.checksum_start, "校验计算的起始字节位置（从第1字节开始计数）\n0 表示自动从帧头开始计算")
+        self.checksum_start.setRange(0, 1000)  # 0=自动, 1+=第N字节
         self.checksum_start.setValue(0)
         self.checksum_start.setMinimumWidth(100)
-        start_help = BodyLabel("(0=从帧头开始, 1=从帧头后第1字节)")
-        start_help.setStyleSheet("color: #999999;")
+        start_help = BodyLabel("(0=自动, 1=第1字节, 2=第2字节…)")
+        TH.apply_help_text(start_help)
         start_layout.addWidget(start_label)
         start_layout.addWidget(self.checksum_start)
         start_layout.addWidget(start_help)
@@ -348,13 +356,24 @@ class ProtocolInterface(QWidget):
         self.checksum_end.setRange(0, 1000)
         self.checksum_end.setValue(0)
         self.checksum_end.setMinimumWidth(100)
-        end_help = BodyLabel("(不包含,空表示到校验码前)")
-        end_help.setStyleSheet("color: #999999;")
+        set_fluent_tooltip(self.checksum_end, "校验计算的最后一个字节位置（包含该字节）\n0 表示自动计算到校验码前一字节\n例如: 设为8表示计算到第8字节（含）")
+        end_help = BodyLabel("(包含该字节, 0=自动到校验码前)")
+        TH.apply_help_text(end_help)
         end_layout.addWidget(end_label)
         end_layout.addWidget(self.checksum_end)
         end_layout.addWidget(end_help)
         end_layout.addStretch()
         card_layout.addLayout(end_layout)
+        
+        # 校验范围预览标签
+        self.checksum_range_preview = BodyLabel("")
+        TH.apply_help_text(self.checksum_range_preview)
+        card_layout.addWidget(self.checksum_range_preview)
+        # 连接信号 → 实时更新预览
+        self.checksum_start.valueChanged.connect(self._update_checksum_range_preview)
+        self.checksum_end.valueChanged.connect(self._update_checksum_range_preview)
+        # 初始化预览
+        self._update_checksum_range_preview()
         
         # 校验位置（相对位置，保留用于向后兼容）
         pos_layout = QHBoxLayout()
@@ -366,8 +385,8 @@ class ProtocolInterface(QWidget):
             "帧尾前", "帧尾后"
         ])
         self.checksum_position.setMinimumWidth(200)
-        pos_help = BodyLabel("(仅当绝对位置未设置时使用)")
-        pos_help.setStyleSheet("color: #999999;")
+        pos_help = BodyLabel("(绝对位置已设置时忽略此项)")
+        TH.apply_help_text(pos_help)
         pos_layout.addWidget(pos_label)
         pos_layout.addWidget(self.checksum_position, 1)
         pos_layout.addWidget(pos_help)
@@ -484,11 +503,11 @@ class ProtocolInterface(QWidget):
             # 所有类型（包括字符串）在长度>1时都可以选择字节序
             if length > 1:
                 endian_combo.setEnabled(True)
-                endian_label.setStyleSheet("")  # 正常颜色
+                TH.apply_default_text(endian_label)
             else:
                 # 长度为1时也启用，但显示为灰色提示
                 endian_combo.setEnabled(True)
-                endian_label.setStyleSheet("color: #999999;")
+                TH.apply_help_text(endian_label)
         
         type_combo.currentTextChanged.connect(update_endian_state)
         length_spin.valueChanged.connect(update_endian_state)
@@ -536,10 +555,10 @@ class ProtocolInterface(QWidget):
                     length = l_spin.value()
                     if length > 1:
                         e_combo.setEnabled(True)
-                        e_label.setStyleSheet("")
+                        TH.apply_default_text(e_label)
                     else:
                         e_combo.setEnabled(True)
-                        e_label.setStyleSheet("color: #999999;")
+                        TH.apply_help_text(e_label)
             return toggle
         
         toggle_lock = make_toggle_lock(lock_btn, lock_state, name_edit, type_combo, 
@@ -597,8 +616,9 @@ class ProtocolInterface(QWidget):
         field_name = field_card.name_edit.text() if hasattr(field_card, 'name_edit') else ""
         field_name_lower = field_name.lower()
         
-        # 获取校验配置的位置和长度
-        checksum_pos = self.checksum_byte_position.value() if hasattr(self, 'checksum_byte_position') else 0
+        # 获取校验配置的位置和长度（UI显示1-based，转为0-based进行比较）
+        checksum_pos_ui = self.checksum_byte_position.value() if hasattr(self, 'checksum_byte_position') else 0
+        checksum_pos = checksum_pos_ui - 1 if checksum_pos_ui > 0 else 0
         checksum_len = self.checksum_length.value() if hasattr(self, 'checksum_length') else 1
         
         # 获取手动指定的关联字段名
@@ -648,6 +668,33 @@ class ProtocolInterface(QWidget):
             self.checksum_endianness.setCurrentText(new_endian)
             self.checksum_endianness.blockSignals(False)
     
+    def _update_checksum_range_preview(self):
+        """更新校验范围预览标签，用1-based人性化显示"""
+        start = self.checksum_start.value()  # 1-based, 0=自动
+        end = self.checksum_end.value()       # 1-based inclusive (= 0-based exclusive), 0=自动
+        
+        if start == 0 and end == 0:
+            self.checksum_range_preview.setText(
+                f"    ▸ 实际计算范围: 第1字节 ~ 校验码前一字节（全自动）"
+            )
+        elif start > 0 and end == 0:
+            self.checksum_range_preview.setText(
+                f"    ▸ 实际计算范围: 第 {start} 字节 ~ 校验码前一字节（自动结束）"
+            )
+        elif start == 0 and end > 0:
+            self.checksum_range_preview.setText(
+                f"    ▸ 实际计算范围: 第1字节 ~ 第 {end} 字节，共 {end} 字节"
+            )
+        elif end >= start:
+            count = end - start + 1
+            self.checksum_range_preview.setText(
+                f"    ▸ 实际计算范围: 第 {start} 字节 ~ 第 {end} 字节，共 {count} 字节"
+            )
+        else:
+            self.checksum_range_preview.setText(
+                f"    ▸ ⚠ 无效: 结束位置({end})必须 ≥ 起始位置({start})"
+            )
+
     def _on_checksum_endianness_changed(self, endian_text: str):
         """当校验配置的字节序改变时，同步到匹配位置的字段
         
@@ -915,6 +962,22 @@ class ProtocolInterface(QWidget):
                     endianness=endianness,
                     locked=locked
                 )
+                
+                # 从原始加载的字段定义中恢复UI无法编辑的高级属性
+                original = self._loaded_field_defs.get(field_name)
+                if original:
+                    field.bit_fields = original.bit_fields
+                    field.condition = original.condition
+                    field.calculation = original.calculation
+                    field.multiplier = original.multiplier
+                    field.value_offset = original.value_offset
+                    field.unit = original.unit
+                    field.decimal_places = original.decimal_places
+                    field.length_field = original.length_field
+                    field.length_offset = original.length_offset
+                    field.length_formula = original.length_formula
+                    field.description = original.description
+                
                 fields.append(field)
             
             # 创建校验配置
@@ -959,10 +1022,11 @@ class ProtocolInterface(QWidget):
                 }
                 position = position_map.get(self.checksum_position.currentText(), ChecksumPosition.BEFORE_TAIL)
                 
-                # 获取校验配置详细信息
-                checksum_pos = self.checksum_byte_position.value() if self.checksum_byte_position.value() > 0 else None
+                # 获取校验配置详细信息（UI显示1-based，保存时转为0-based）
+                checksum_pos = self.checksum_byte_position.value() - 1 if self.checksum_byte_position.value() > 0 else None
                 checksum_len = self.checksum_length.value()
-                checksum_start_val = self.checksum_start.value() if self.checksum_start.value() > 0 else None
+                checksum_start_val = self.checksum_start.value() - 1 if self.checksum_start.value() > 0 else None
+                # checksum_end: UI的1-based inclusive = 0-based exclusive，数值相同无需转换
                 checksum_end_val = self.checksum_end.value() if self.checksum_end.value() > 0 else None
                 
                 # 获取校验码字节序
@@ -1258,21 +1322,18 @@ class ProtocolInterface(QWidget):
                 }
                 position = position_map.get(self.checksum_position.currentText(), ChecksumPosition.BEFORE_TAIL)
                 
-                # 获取校验配置详细信息
-                checksum_pos = self.checksum_byte_position.value() if hasattr(self, 'checksum_byte_position') else None
+                # 获取校验配置详细信息（UI显示1-based，保存时转为0-based）
+                checksum_pos = self.checksum_byte_position.value() - 1 if hasattr(self, 'checksum_byte_position') and self.checksum_byte_position.value() > 0 else None
                 checksum_len = self.checksum_length.value() if hasattr(self, 'checksum_length') else 1
-                checksum_start_val = self.checksum_start.value() if hasattr(self, 'checksum_start') else None
-                checksum_end_val = self.checksum_end.value() if hasattr(self, 'checksum_end') else None
+                checksum_start_val = self.checksum_start.value() - 1 if hasattr(self, 'checksum_start') and self.checksum_start.value() > 0 else None
+                # checksum_end: UI的1-based inclusive = 0-based exclusive，数值相同无需转换
+                checksum_end_val = self.checksum_end.value() if hasattr(self, 'checksum_end') and self.checksum_end.value() > 0 else None
                 
                 # 获取校验码字节序
                 checksum_endian = Endianness.LITTLE  # 默认小端
                 if hasattr(self, 'checksum_endianness'):
                     endian_text = self.checksum_endianness.currentText()
                     checksum_endian = Endianness.BIG if "大端" in endian_text else Endianness.LITTLE
-                
-                # 如果checksum_pos为0则设为None（表示使用相对位置）
-                if checksum_pos == 0:
-                    checksum_pos = None
                 
                 checksum_config = ChecksumConfig(
                     checksum_type=checksum_type,
@@ -1341,6 +1402,33 @@ class ProtocolInterface(QWidget):
             )
             
             if file_path:
+                # 检查同目录下是否存在同名协议（不同文件）
+                save_dir = os.path.dirname(file_path)
+                for fname in os.listdir(save_dir) if os.path.isdir(save_dir) else []:
+                    if not fname.endswith('.json'):
+                        continue
+                    full_path = os.path.join(save_dir, fname)
+                    if os.path.abspath(full_path) == os.path.abspath(file_path):
+                        continue  # 自身文件不算冲突
+                    try:
+                        with open(full_path, 'r', encoding='utf-8') as chk_f:
+                            existing = json.load(chk_f)
+                        if existing.get('protocol_name') == protocol.protocol_name:
+                            from qfluentwidgets import MessageBox
+                            dup_msg = MessageBox(
+                                "协议名称重复",
+                                f"同目录下文件 '{fname}' 已使用协议名 '{protocol.protocol_name}'。\n"
+                                f"建议修改协议名称以便区分。是否仍要保存？",
+                                self
+                            )
+                            dup_msg.yesButton.setText("继续保存")
+                            dup_msg.cancelButton.setText("返回修改")
+                            if dup_msg.exec() != 1:
+                                return
+                            break
+                    except Exception:
+                        pass
+                
                 # 保存协议
                 if ProtocolManager.save_protocol(protocol, file_path):
                     # 记忆当前文件路径
@@ -1485,21 +1573,18 @@ class ProtocolInterface(QWidget):
                 }
                 position = position_map.get(self.checksum_position.currentText(), ChecksumPosition.BEFORE_TAIL)
                 
-                # 获取校验配置详细信息
-                checksum_pos = self.checksum_byte_position.value() if hasattr(self, 'checksum_byte_position') else None
+                # 获取校验配置详细信息（UI显示1-based，保存时转为0-based）
+                checksum_pos = self.checksum_byte_position.value() - 1 if hasattr(self, 'checksum_byte_position') and self.checksum_byte_position.value() > 0 else None
                 checksum_len = self.checksum_length.value() if hasattr(self, 'checksum_length') else 1
-                checksum_start_val = self.checksum_start.value() if hasattr(self, 'checksum_start') else None
-                checksum_end_val = self.checksum_end.value() if hasattr(self, 'checksum_end') else None
+                checksum_start_val = self.checksum_start.value() - 1 if hasattr(self, 'checksum_start') and self.checksum_start.value() > 0 else None
+                # checksum_end: UI的1-based inclusive = 0-based exclusive，数值相同无需转换
+                checksum_end_val = self.checksum_end.value() if hasattr(self, 'checksum_end') and self.checksum_end.value() > 0 else None
                 
                 # 获取校验码字节序
                 checksum_endian = Endianness.LITTLE  # 默认小端
                 if hasattr(self, 'checksum_endianness'):
                     endian_text = self.checksum_endianness.currentText()
                     checksum_endian = Endianness.BIG if "大端" in endian_text else Endianness.LITTLE
-                
-                # 如果checksum_pos为0则设为None（表示使用相对位置）
-                if checksum_pos == 0:
-                    checksum_pos = None
                 
                 checksum_config = ChecksumConfig(
                     checksum_type=checksum_type,
@@ -1630,6 +1715,12 @@ class ProtocolInterface(QWidget):
             # 清空现有内容
             self.clear_form()
             
+            # 保存原始字段定义，用于保存时保留高级属性
+            self._loaded_field_defs = {}
+            if hasattr(protocol, 'fields') and protocol.fields:
+                for f in protocol.fields:
+                    self._loaded_field_defs[f.name] = f
+            
             # 设置基本信息
             if hasattr(protocol, 'protocol_name'):
                 self.name_edit.setText(protocol.protocol_name)
@@ -1733,17 +1824,18 @@ class ProtocolInterface(QWidget):
                     pos_text = pos_map.get(checksum.position, "帧尾前")
                     self.checksum_position.setCurrentText(pos_text)
                     
-                    # 设置校验详细配置
+                    # 设置校验详细配置（内部0-based → UI 1-based）
                     if hasattr(checksum, 'checksum_position') and checksum.checksum_position is not None:
-                        self.checksum_byte_position.setValue(checksum.checksum_position)
+                        self.checksum_byte_position.setValue(checksum.checksum_position + 1)
                     
                     if hasattr(checksum, 'checksum_length'):
                         self.checksum_length.setValue(checksum.checksum_length)
                     
                     if hasattr(checksum, 'checksum_start') and checksum.checksum_start is not None:
-                        self.checksum_start.setValue(checksum.checksum_start)
+                        self.checksum_start.setValue(checksum.checksum_start + 1)
                     
                     if hasattr(checksum, 'checksum_end') and checksum.checksum_end is not None:
+                        # checksum_end: 0-based exclusive = 1-based inclusive，数值相同
                         self.checksum_end.setValue(checksum.checksum_end)
                     
                     # 设置校验码字节序
@@ -1849,10 +1941,10 @@ class ProtocolInterface(QWidget):
                 # 所有类型在长度>1时都可以选择字节序
                 if length > 1:
                     endian_combo.setEnabled(True)
-                    endian_label.setStyleSheet("")
+                    TH.apply_default_text(endian_label)
                 else:
                     endian_combo.setEnabled(True)
-                    endian_label.setStyleSheet("color: #999999;")
+                    TH.apply_help_text(endian_label)
             
             type_combo.currentTextChanged.connect(update_endian_state)
             length_spin.valueChanged.connect(update_endian_state)
@@ -1901,10 +1993,10 @@ class ProtocolInterface(QWidget):
                         length = l_spin.value()
                         if length > 1:
                             e_combo.setEnabled(True)
-                            e_label.setStyleSheet("")
+                            TH.apply_default_text(e_label)
                         else:
                             e_combo.setEnabled(True)
-                            e_label.setStyleSheet("color: #999999;")
+                            TH.apply_help_text(e_label)
                 return toggle
             
             toggle_lock = make_toggle_lock_loaded(lock_btn, lock_state, name_edit, type_combo,

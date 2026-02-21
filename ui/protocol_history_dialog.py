@@ -32,7 +32,9 @@ class ProtocolHistoryDialog(MessageBoxBase):
         """设置UI"""
         # 协议列表标题
         list_label = BodyLabel("📜 最近使用的协议:")
-        list_label.setStyleSheet("font-weight: bold;")
+        font = list_label.font()
+        font.setBold(True)
+        list_label.setFont(font)
         self.viewLayout.addWidget(list_label)
         
         # 协议列表
@@ -44,7 +46,9 @@ class ProtocolHistoryDialog(MessageBoxBase):
         
         # 详细信息标题
         detail_label = BodyLabel("📋 协议信息:")
-        detail_label.setStyleSheet("font-weight: bold;")
+        font = detail_label.font()
+        font.setBold(True)
+        detail_label.setFont(font)
         self.viewLayout.addWidget(detail_label)
         
         # 详细信息文本

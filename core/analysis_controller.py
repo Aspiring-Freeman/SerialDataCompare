@@ -3,6 +3,10 @@
 AnalysisController - 分析控制器
 从 main_window.py 提取的核心分析逻辑
 负责协调协议、解析、会话管理
+
+⚠️ 注意：此模块在 v1.4.4/v1.4.5 中创建，但目前 main_window.py
+   仍使用直接的 ParseThread 方式进行分析，尚未集成本控制器。
+   保留此模块作为未来架构升级的基础。
 """
 
 from typing import Optional, List, Callable, Any

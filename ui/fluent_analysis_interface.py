@@ -16,6 +16,7 @@ from qfluentwidgets import (
 from models import ParseResult
 from models.frame_table_model import FrameTableModel
 from ui.history_dialog import HistoryDialog
+from utils.theme_helper import ThemeHelper as TH
 
 
 class AnalysisInterface(QWidget):
@@ -38,7 +39,6 @@ class AnalysisInterface(QWidget):
         from qfluentwidgets import ScrollArea
         scroll = ScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea{background: transparent; border: none}")
         
         # 滚动区域内容
         self.scroll_widget = QWidget()
@@ -50,8 +50,9 @@ class AnalysisInterface(QWidget):
         self.create_input_card()
         self.create_result_card()
         
-        # 设置滚动区域
+        # 设置滚动区域（enableTransparentBackground 须在 setWidget 之后调用）
         scroll.setWidget(self.scroll_widget)
+        scroll.enableTransparentBackground()
         main_layout.addWidget(scroll)
         
         # 当前协议
@@ -92,9 +93,9 @@ class AnalysisInterface(QWidget):
         hint_layout.setSpacing(8)
         hint_layout.setContentsMargins(10, 0, 0, 0)
         
-        hint_title = BodyLabel("📋 输入说明:")
-        hint_title.setStyleSheet("font-weight: bold; color: #0078D4;")
-        hint_layout.addWidget(hint_title)
+        self._hint_title = BodyLabel("📋 输入说明:")
+        TH.apply_title_accent(self._hint_title)
+        hint_layout.addWidget(self._hint_title)
         
         hint1 = BodyLabel("• 支持空格分隔的16进制格式")
         hint2 = BodyLabel("• 例: AA BB CC DD")
@@ -102,8 +103,9 @@ class AnalysisInterface(QWidget):
         hint4 = BodyLabel("• 自动识别帧头帧尾")
         hint5 = BodyLabel("• 支持多帧数据批量分析")
         
-        for hint in [hint1, hint2, hint3, hint4, hint5]:
-            hint.setStyleSheet("color: #606060; font-size: 13px;")
+        self._hint_items = [hint1, hint2, hint3, hint4, hint5]
+        for hint in self._hint_items:
+            TH.apply_hint(hint)
             hint_layout.addWidget(hint)
         
         hint_layout.addStretch()
@@ -130,9 +132,9 @@ class AnalysisInterface(QWidget):
         button_layout.addStretch()
         
         # 添加提示文本
-        tip_label = BodyLabel("ℹ️ 提示：点击“开始分析”按钮进行数据解析，非实时分析")
-        tip_label.setStyleSheet("color: #888888; font-size: 12px; font-style: italic;")
-        button_layout.addWidget(tip_label)
+        self._tip_label = BodyLabel("ℹ️ 提示：点击“开始分析”按钮进行数据解析，非实时分析")
+        TH.apply_muted(self._tip_label, italic=True)
+        button_layout.addWidget(self._tip_label)
         
         card_layout.addLayout(button_layout)
         
@@ -151,9 +153,9 @@ class AnalysisInterface(QWidget):
         title_layout.addWidget(title)
         
         # 说明文字
-        hint_label = BodyLabel("💡 点击表格行可查看详细信息")
-        hint_label.setStyleSheet("color: #606060; font-size: 13px; margin-left: 20px;")
-        title_layout.addWidget(hint_label)
+        self._result_hint = BodyLabel("💡 点击表格行可查看详细信息")
+        TH.apply_hint(self._result_hint)
+        title_layout.addWidget(self._result_hint)
         
         title_layout.addStretch()
         
@@ -208,22 +210,22 @@ class AnalysisInterface(QWidget):
         bottom_hint_layout.setSpacing(20)
         
         hint_icon1 = BodyLabel("📊")
-        hint_text1 = BodyLabel("帧序号: 数据帧的顺序编号")
-        hint_text1.setStyleSheet("color: #606060; font-size: 12px;")
+        self._hint_text1 = BodyLabel("帧序号: 数据帧的顺序编号")
+        TH.apply_hint(self._hint_text1, pixel_size=12)
         bottom_hint_layout.addWidget(hint_icon1)
-        bottom_hint_layout.addWidget(hint_text1)
+        bottom_hint_layout.addWidget(self._hint_text1)
         
         hint_icon2 = BodyLabel("📍")
-        hint_text2 = BodyLabel("位置: 数据帧在原始数据中的字节位置")
-        hint_text2.setStyleSheet("color: #606060; font-size: 12px;")
+        self._hint_text2 = BodyLabel("位置: 数据帧在原始数据中的字节位置")
+        TH.apply_hint(self._hint_text2, pixel_size=12)
         bottom_hint_layout.addWidget(hint_icon2)
-        bottom_hint_layout.addWidget(hint_text2)
+        bottom_hint_layout.addWidget(self._hint_text2)
         
         hint_icon3 = BodyLabel("🔍")
-        hint_text3 = BodyLabel("双击行可查看更多详情")
-        hint_text3.setStyleSheet("color: #606060; font-size: 12px;")
+        self._hint_text3 = BodyLabel("双击行可查看更多详情")
+        TH.apply_hint(self._hint_text3, pixel_size=12)
         bottom_hint_layout.addWidget(hint_icon3)
-        bottom_hint_layout.addWidget(hint_text3)
+        bottom_hint_layout.addWidget(self._hint_text3)
         
         bottom_hint_layout.addStretch()
         
@@ -348,3 +350,18 @@ class AnalysisInterface(QWidget):
         # 创建并显示历史对话框
         dialog = HistoryDialog(self.analysis_history, self)
         dialog.exec()
+
+    def _refresh_styles(self):
+        """主题切换后刷新所有样式
+        
+        注: FluentLabelBase 通过 setTextColor 设置的颜色会自动跟随主题，
+        此方法仅作为安全回退，确保主题切换后一致性。
+        """
+        TH.apply_title_accent(self._hint_title)
+        for h in self._hint_items:
+            TH.apply_hint(h)
+        TH.apply_muted(self._tip_label, italic=True)
+        TH.apply_hint(self._result_hint)
+        TH.apply_hint(self._hint_text1, pixel_size=12)
+        TH.apply_hint(self._hint_text2, pixel_size=12)
+        TH.apply_hint(self._hint_text3, pixel_size=12)

@@ -5,8 +5,9 @@
 """
 
 import json
+from enum import Enum
 from typing import Dict, Any, List, Tuple, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # JSON Schema 定义协议格式
 PROTOCOL_SCHEMA = {
@@ -268,12 +269,20 @@ PROTOCOL_SCHEMA = {
 }
 
 
+class ValidationSeverity(Enum):
+    """验证问题严重级别"""
+    ERROR = "error"         # 致命错误，无法加载
+    WARNING = "warning"     # 警告，可以加载但可能有问题
+    INFO = "info"           # 信息提示，建议优化
+
+
 @dataclass
 class ValidationError:
     """验证错误信息"""
     path: str           # 错误位置路径，如 "fields[0].name"
     message: str        # 错误消息
     value: Any = None   # 问题值
+    severity: ValidationSeverity = ValidationSeverity.ERROR  # 严重级别
 
 
 class ProtocolValidator:
@@ -362,10 +371,27 @@ class ProtocolValidator:
             errors.append(ValidationError(
                 path="schema_version",
                 message=f"Schema版本 {schema_version} 可能不兼容当前版本 {cls.CURRENT_SCHEMA_VERSION}",
-                value=schema_version
+                value=schema_version,
+                severity=ValidationSeverity.WARNING
             ))
         
-        return len(errors) == 0, errors
+        # 8. 检查是否缺少可选但推荐的字段
+        if "description" not in data:
+            errors.append(ValidationError(
+                path="description",
+                message="建议添加协议描述信息",
+                severity=ValidationSeverity.INFO
+            ))
+        if "version" not in data:
+            errors.append(ValidationError(
+                path="version",
+                message="建议添加协议版本号",
+                severity=ValidationSeverity.INFO
+            ))
+        
+        # 判断是否有效：只看 ERROR 级别
+        has_errors = any(e.severity == ValidationSeverity.ERROR for e in errors)
+        return not has_errors, errors
     
     @classmethod
     def _validate_field(cls, field: Dict[str, Any], index: int, existing_names: set) -> List[ValidationError]:

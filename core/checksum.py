@@ -15,7 +15,7 @@
 
 import struct
 from typing import Optional, Tuple, Dict, Any
-from models.protocol import ChecksumType
+from models.protocol import ChecksumType, ChecksumConfig
 
 
 class CRCTables:
@@ -738,19 +738,26 @@ class ChecksumValidator:
                 data_start = 0
                 data_end = checksum_config.checksum_end
             else:
-                if checksum_config.start_offset == -1:
+                # 旧版 offset 语义（已弃用，向后兼容）
+                import warnings
+                warnings.warn(
+                    "start_offset/end_offset 已弃用，请迁移到 checksum_start/checksum_end",
+                    DeprecationWarning,
+                    stacklevel=2
+                )
+                if checksum_config.start_offset == ChecksumConfig.LEGACY_START_FROM_ZERO:
                     data_start = 0
                 else:
                     data_start = 1 + checksum_config.start_offset
                 
-                if checksum_config.end_offset == 0:
+                if checksum_config.end_offset == ChecksumConfig.LEGACY_END_AT_CHECKSUM:
                     data_end = checksum_start
-                elif checksum_config.end_offset == -1:
+                elif checksum_config.end_offset == ChecksumConfig.LEGACY_END_FRAME_MINUS1:
                     data_end = len(frame_data) - 1
                 elif checksum_config.end_offset < 0:
                     data_end = len(frame_data) + checksum_config.end_offset + 1
                 else:
-                    if checksum_config.end_offset < 100:
+                    if checksum_config.end_offset < ChecksumConfig.LEGACY_RELATIVE_THRESHOLD:
                         data_end = data_start + checksum_config.end_offset
                     else:
                         data_end = checksum_config.end_offset

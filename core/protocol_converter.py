@@ -77,13 +77,22 @@ class ProtocolConverter:
     @staticmethod
     def detect_format(data: Dict[str, Any]) -> str:
         """
-        检测JSON格式类型
+        检测JSON格式类型（检查所有字段，按多数投票决定）
         
         Returns:
             'standard' - 标准格式（程序内部格式）
             'extended' - 扩展格式（包含index, value等字段）
             'unknown' - 无法识别
         """
+        # 如果有 protocol_name 和 frame_header，这是标准格式（即使 fields 为空）
+        if 'protocol_name' in data and 'frame_header' in data:
+            fields = data.get('fields', [])
+            if not fields:
+                return 'standard'
+            
+            # 检查所有字段，统计格式投票
+            return ProtocolConverter._vote_format(fields)
+        
         if 'fields' not in data:
             return 'unknown'
         
@@ -91,14 +100,27 @@ class ProtocolConverter:
         if not fields:
             return 'unknown'
         
-        first_field = fields[0]
+        return ProtocolConverter._vote_format(fields)
+    
+    @staticmethod
+    def _vote_format(fields: list) -> str:
+        """通过检查所有字段进行格式投票，避免仅凭第一个字段误判"""
+        extended_keys = {'index', 'value', 'format'}
+        standard_keys = {'name', 'byte_count', 'field_type'}
         
-        # 检查是否为扩展格式
-        if 'index' in first_field or 'value' in first_field or 'format' in first_field:
+        extended_votes = 0
+        standard_votes = 0
+        
+        for field in fields:
+            field_keys = set(field.keys())
+            if field_keys & extended_keys:
+                extended_votes += 1
+            if field_keys >= standard_keys:  # 必须同时包含这三个key
+                standard_votes += 1
+        
+        if extended_votes > standard_votes:
             return 'extended'
-        
-        # 检查是否为标准格式
-        if 'name' in first_field and 'byte_count' in first_field and 'field_type' in first_field:
+        elif standard_votes > 0:
             return 'standard'
         
         return 'unknown'

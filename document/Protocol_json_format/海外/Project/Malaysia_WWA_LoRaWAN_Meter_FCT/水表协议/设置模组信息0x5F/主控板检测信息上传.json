@@ -175,7 +175,7 @@
     {
       "name": "默认值(无效值0x01 0x01 0x01 0x01)",
       "byte_count": 4,
-      "field_type": "uint32",
+      "field_type": "bytes",
       "description": "",
       "order": 0,
       "length_field": null,
@@ -206,8 +206,8 @@
     },
     {
       "name": "RSSI(0xFF B9信号强度：-71)",
-      "byte_count": 9,
-      "field_type": "int32",
+      "byte_count": 2,
+      "field_type": "int16",
       "description": "",
       "order": 0,
       "length_field": null,

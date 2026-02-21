@@ -482,7 +482,7 @@ class HexLogExtractorDialog(QDialog):
         self.viewLayout.addWidget(self.titleLabel)
         
         # 说明
-        self.descLabel = BodyLabel('从串口调试日志中提取 HEX 数据帧（支持 DGM_RX/TX、短横线-、冒号:等分隔格式）', self)
+        self.descLabel = BodyLabel('从串口调试日志中提取 HEX 数据帧（支持 DGM、TX/RX→、短横线-、冒号:等格式）', self)
         self.descLabel.setTextColor("#888888", "#888888")
         self.viewLayout.addWidget(self.descLabel)
         
@@ -500,9 +500,11 @@ class HexLogExtractorDialog(QDialog):
             '粘贴日志数据，支持多种格式:\n\n'
             '格式1 (DGM日志):\n'
             '[12:13:39.223] RX ← D/HEX DGM_RX: 0000-0007: 68 01 80 16 00 00 00 68    h......h\n\n'
-            '格式2 (短横线分隔):\n'
-            '2026-01-30 16:41:24|INFO|SerialPort|发送指令：68-AA-AA-AA-AA-AA-68-05-12-D1-16\n\n'
-            '格式3 (冒号分隔):\n'
+            '格式2 (TX/RX 箭头):\n'
+            '[08:01:03.289] TX → 68 00 00 00 01 00 00 68  01 0B 00 26 01 23 16\n\n'
+            '格式3 (短横线分隔):\n'
+            '2026-01-30 16:41:24|INFO|发送指令：68-AA-AA-AA-AA-AA-68-05-12-D1-16\n\n'
+            '格式4 (冒号分隔):\n'
             '68:AA:AA:AA:AA:AA:68:05:12:D1:16'
         )
         self.inputEdit.setMinimumHeight(150)
@@ -615,12 +617,32 @@ class HexLogExtractorDialog(QDialog):
                         hex_part = match.group(1)
                         hex_bytes_in_line = hex_part.split(':')
                 
-                # 模式4: 空格分隔的HEX数据（宽松匹配）
+                # 模式4: 空格分隔的HEX数据（宽松匹配，行尾有ASCII表示）
                 if not hex_bytes_in_line:
                     pattern_space = r':\s*([0-9A-Fa-f]{2}(?:\s+[0-9A-Fa-f]{2})+)\s+[\x00-\x7F]+$'
                     match = re.search(pattern_space, line)
                     if match:
                         hex_part = match.group(1)
+                        hex_bytes_in_line = hex_part.split()
+                
+                # 模式5: TX/RX 方向标记后的空格分隔HEX数据
+                # 例如: [08:01:03.289] TX → 68 00 00 00 01 00 00 68  01 0B 00 26 01 23 16
+                # 例如: [08:00:04.201] TX → 55 AE 09 01 01 00 00 0E  AA
+                # 支持 →/←/->/<- 以及无箭头的 TX:/RX: 格式
+                if not hex_bytes_in_line:
+                    pattern_txrx = r'(?:TX|RX|Send|Recv)\s*(?:[→←\-><]+|:)\s*((?:[0-9A-Fa-f]{2}\s*)+)\s*$'
+                    match = re.search(pattern_txrx, line, re.IGNORECASE)
+                    if match:
+                        hex_part = match.group(1).strip()
+                        hex_bytes_in_line = hex_part.split()
+                
+                # 模式6: 通用回退 — 行内连续≥3个空格分隔的HEX字节对
+                # 只要一行中能找到连续至少3个空格分隔的两位hex，就提取出来
+                if not hex_bytes_in_line:
+                    pattern_generic = r'(?<![0-9A-Fa-f])([0-9A-Fa-f]{2}(?:\s+[0-9A-Fa-f]{2}){2,})(?![0-9A-Fa-f])'
+                    match = re.search(pattern_generic, line)
+                    if match:
+                        hex_part = match.group(1).strip()
                         hex_bytes_in_line = hex_part.split()
                 
                 if hex_bytes_in_line:

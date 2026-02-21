@@ -74,6 +74,7 @@ class ToolsInterface(ScrollArea):
         # 主容器
         self.container = QWidget()
         self.setWidget(self.container)
+        self.enableTransparentBackground()
         
         # 主布局
         self.mainLayout = QVBoxLayout(self.container)

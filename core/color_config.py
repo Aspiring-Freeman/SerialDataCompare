@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 from PySide6.QtGui import QColor
 
-from utils import atomic_write_json
+from utils import atomic_write_json, safe_load_json
 
 logger = logging.getLogger(__name__)
 
@@ -147,26 +147,21 @@ class ColorConfig:
         return self._load_errors.copy()
     
     def _load_colors_safe(self) -> Dict[str, str]:
-        """安全加载颜色配置（带验证和迁移）"""
+        """安全加载颜色配置（带验证、迁移和备份恢复）"""
         self._load_errors = []
         
         if not self.config_file.exists():
             logger.info("颜色配置文件不存在，使用默认配置")
             return self.DEFAULT_COLORS.copy()
         
-        try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except json.JSONDecodeError as e:
-            logger.error(f"颜色配置文件 JSON 格式错误: {e}")
+        # 使用 safe_load_json 自动处理损坏和备份恢复
+        data = safe_load_json(str(self.config_file), default=None)
+        if data is None:
             self._load_errors.append(ColorValidationError(
                 field="_file",
                 value=str(self.config_file),
-                message=f"JSON 格式错误: {e}"
+                message="JSON 加载失败（含备份恢复）"
             ))
-            return self.DEFAULT_COLORS.copy()
-        except Exception as e:
-            logger.error(f"读取颜色配置文件失败: {e}")
             return self.DEFAULT_COLORS.copy()
         
         # 检查是否需要迁移

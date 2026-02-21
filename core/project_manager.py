@@ -9,7 +9,7 @@ from typing import List, Optional, Dict
 from datetime import datetime
 from pathlib import Path
 
-from utils import atomic_write_json
+from utils import atomic_write_json, safe_load_json
 
 
 @dataclass
@@ -171,27 +171,27 @@ class ProjectManager:
         self.load_config()
     
     def load_config(self):
-        """加载项目配置"""
+        """加载项目配置（带备份恢复）"""
         try:
-            if os.path.exists(self.config_file):
-                with open(self.config_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                # 加载项目列表
-                projects_data = data.get('projects', [])
-                for proj_data in projects_data:
-                    project = Project.from_dict(proj_data)
-                    self.projects[project.id] = project
-                    self._project_order.append(project.id)
-                
-                # 恢复当前项目
-                current_id = data.get('current_project_id')
-                if current_id and current_id in self.projects:
-                    self.current_project = self.projects[current_id]
-                    self.current_project.scan_protocols()
-                
-                # 恢复当前协议
-                self.current_protocol_path = data.get('current_protocol_path')
+            data = safe_load_json(self.config_file, default=None)
+            if data is None:
+                return
+            
+            # 加载项目列表
+            projects_data = data.get('projects', [])
+            for proj_data in projects_data:
+                project = Project.from_dict(proj_data)
+                self.projects[project.id] = project
+                self._project_order.append(project.id)
+            
+            # 恢复当前项目
+            current_id = data.get('current_project_id')
+            if current_id and current_id in self.projects:
+                self.current_project = self.projects[current_id]
+                self.current_project.scan_protocols()
+            
+            # 恢复当前协议
+            self.current_protocol_path = data.get('current_protocol_path')
                 
         except Exception as e:
             print(f"加载项目配置失败: {e}")

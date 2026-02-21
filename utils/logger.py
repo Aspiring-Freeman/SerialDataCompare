@@ -8,6 +8,8 @@ from typing import Optional
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QColor
 
+from utils.theme_helper import ThemeHelper as TH
+
 
 class LogLevel(Enum):
     """日志级别"""
@@ -27,18 +29,14 @@ class Logger(QObject):
         self.logs = []  # 存储所有日志
         self.enabled = True
         
-        # 日志级别对应的颜色
-        self.level_colors = {
-            LogLevel.DEBUG: "#808080",      # 灰色
-            LogLevel.INFO: "#000000",       # 黑色
-            LogLevel.WARNING: "#FF8C00",    # 橙色
-            LogLevel.ERROR: "#DC143C"       # 红色
-        }
+        # 日志级别对应的颜色 (动态获取，支持主题切换)
+        # 注意: level_colors 已改为通过 TH.log_color_map() 动态获取
     
     def _format_log(self, level: LogLevel, message: str) -> str:
         """格式化日志消息"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        color = self.level_colors.get(level, "#000000")
+        color_map = TH.log_color_map()
+        color = color_map.get(level.value, TH.info_log_color())
         
         # 使用 HTML 格式化，带颜色和时间戳
         html_log = f'<span style="color: {color};">[{timestamp}] [{level.value}] {message}</span>'

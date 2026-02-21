@@ -1,5 +1,65 @@
 # 变更日志 (CHANGELOG)
 
+## [1.6.0] - 2026-02-21
+
+### 🏗️ 架构重构
+
+#### 1. 全面代码质量重构
+- **14+ 文件规范化**：统一异常处理、资源管理、类型注解
+- **float 精度修复**：使用 `round()` 替代浮点直接比较
+- **QThread 优雅关闭**：添加 `requestInterruption()` + `wait()` 替代强制终止
+- **SQLite 迁移机制**：新增 `_maybe_migrate()` 自动添加缺失列
+- **Logger 初始化顺序**：修复 `__init__` 中日志对象未初始化就被调用的崩溃
+
+#### 2. 主题系统重构
+- **新增 ThemeHelper**：集中管理所有颜色和样式，支持深色/浅色自动适配
+- **20+ 颜色方法**：text_color、hint_color、accent_color 等实时查询主题
+- **30+ 样式方法**：byte_style_normal/selected、field_style_typed 等复合样式
+- **FluentLabelBase apply_* 方法**：setTextColor 自动跟随主题切换
+
+### ✨ 新功能
+
+#### 3. 用户偏好系统
+- **持久化设置**：`~/.serialdatacompare/user_prefs.json`
+- **自动切换帧详情开关**：Settings 中可控制是否自动跳转帧详情页面
+- **get_pref / set_pref API**：便捷的偏好读写接口
+
+#### 4. 协议格式检测增强
+- **多数投票机制**：`detect_format()` 检查所有字段而非仅首字段
+- **新增 `_vote_format()` 辅助方法**：基于 set intersection 判断格式
+
+#### 5. 校验系统改进
+- **魔法数字常量化**：`LEGACY_START_FROM_ZERO`、`LEGACY_END_AT_CHECKSUM` 等 ClassVar 常量
+- **弃用警告**：旧版 `start_offset`/`end_offset` 运行时发出 DeprecationWarning
+- **校验 UI 预览**：实时显示校验范围的人性化描述
+
+### 🐛 Bug 修复
+
+#### 6. 高亮联动 7 项修复
+- **Bug 1**：`byte_style_selected`/`field_style_selected` 参数 `bg_color` 改为 f-string 生效
+- **Bug 3**：`ClickableFieldLabel.set_type_color(None)` 恢复 `field_style_normal()`
+- **Bug 4**：`show_frame()` 重置 `current_highlighted_field`，防止帧切换后同名字段首次点击无反应
+- **Bug 5**：>128 字节帧显示提示"字节高亮联动不可用"
+- **Bug 6**：`deleteLater()` 前先 `disconnect()` 信号，防止窗口期误触发
+- **Issue 7**：深色主题下 `name_label` 高亮时设为 `#333`，取消时恢复主题色
+- **Issue 8**：`eventFilter` 安装在 ScrollArea/Cards 上，精确判断空白区域点击
+
+#### 7. 其他修复
+- **BYTES 字节序反转**：修复 BYTES 类型字段未正确反转的问题
+- **空帧头/帧尾**：支持 `frame_header`/`frame_tail` 为空时的协议解析
+- **日志行数限制**：`setMaximumBlockCount` 防止日志无限增长
+- **分析历史去重**：保存前检查重复记录
+- **窗口几何记忆**：窗口大小和位置持久化
+
+### 📝 文档
+
+- README 版本同步至 v1.6.0，日期更新
+- RELEASE_v1.5.0 日期修正
+- 许可证占位符替换为 MIT 引用
+- CHANGELOG 完整记录所有改动
+
+---
+
 ## [1.5.3] - 2026-01-30
 
 ### 🔧 改进
@@ -64,7 +124,7 @@
 
 ---
 
-## [1.5.0] - 2025-11-22
+## [1.5.0] - 2026-01-04
 
 ### ✨ 新功能
 
@@ -98,18 +158,17 @@
 
 ---
 
-## [1.4.5] - 2025-11-21
-
-### 🏗️ 架构改进（重大重构）
+## [1.4.5] - 2026-01-04
 
 #### 1. 自定义异常体系
 - **新增 `core/exceptions.py`**：结构化异常处理
   - `SerialDataCompareError`：基础异常类
-  - `ProtocolParseError`：协议解析错误（含字段名、位置、期望/实际字节数）
-  - `ChecksumError`：校验和错误（含期望/实际值）
-  - `ConfigValidationError`：配置验证错误（含配置键、无效值）
-  - `DataProcessingError`：数据处理错误
-  - `ProtocolLoadError` / `ProtocolSaveError`：协议文件操作错误
+  - 协议异常：`ProtocolError` → `ProtocolLoadError` / `ProtocolValidationError` / `ProtocolConversionError`
+  - 解析异常：`ParseError` → `FrameNotFoundError` / `FrameParseError` / `FieldParseError` / `DataTruncatedError`
+  - 校验异常：`ChecksumError` → `ChecksumMismatchError` / `ChecksumConfigError` / `ChecksumRangeError`
+  - 配置异常：`ConfigError` → `ConfigLoadError` / `ConfigSaveError`
+  - 数据异常：`DataError` → `InvalidHexDataError` / `DataLengthError`
+  - 工具函数：`format_exception_chain()` / `wrap_exception()`
 
 #### 2. 解析上下文追踪
 - **新增 `core/parse_context.py`**：解析状态管理
@@ -162,32 +221,15 @@
 - 类型提示完善：所有新代码使用类型注解
 - 文档完整：详细的 docstring 和注释
 
-## [1.4.4] - 2025-11-30
+## [1.4.4] - 2025-12-13
 
-### 🏗️ 架构改进
+### 🏗️ 架构改进（基础版本，详见 v1.4.5 完整说明）
 
-#### 1. 自定义异常体系重构
-- **新增 `core/exceptions.py`**：细粒度错误处理
-  - 异常层次结构：ProtocolError、ParseError、ChecksumError、ConfigError、DataError
-  - 每个异常携带详细上下文 (details 字典)
-  - 支持异常链追踪和包装
+- **新增 `core/exceptions.py`**：自定义异常体系（ProtocolError、ParseError、ChecksumError、ConfigError、DataError 五大分类）
+- **新增 `core/parse_context.py`**：解析上下文追踪（位置、阶段、警告收集）
+- **新增 `core/analysis_session.py`**：分析会话抽象（解耦 GUI 与核心逻辑）
 
-#### 2. 解析上下文追踪
-- **新增 `core/parse_context.py`**
-  - 解析位置和阶段追踪
-  - 数据预览和读取方法
-  - 警告收集和追踪日志
-
-#### 3. 分析会话抽象
-- **新增 `core/analysis_session.py`**
-  - 解耦 GUI 与核心逻辑
-  - 会话状态管理和回调机制
-  - 支持多会话管理
-
-### 🔧 技术改进
-- 异常上下文属性支持快速定位错误
-- 解析阶段追踪便于调试复杂协议
-- 会话状态管理支持长时间分析任务
+> 注：v1.4.4 引入基础架构，v1.4.5 在此基础上完善了控制器、转换器增强和颜色配置验证。
 
 ## [1.4.3] - 2025-11-30
 

@@ -2,6 +2,9 @@
 """
 AnalysisSession - 分析会话
 封装一次完整的数据分析过程，解耦 GUI 与核心逻辑
+
+⚠️ 注意：此模块在 v1.4.4 中创建，目前 main_window.py 尚未集成。
+   保留作为未来架构升级的基础，供 AnalysisController 使用。
 """
 
 from typing import List, Optional, Dict, Any, Callable

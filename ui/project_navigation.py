@@ -700,15 +700,16 @@ class ProjectNavigationWidget(QWidget):
                 # 注：由于当前架构是基于文件夹扫描的，"移除"实际上需要移动文件
                 # 为简化实现，这里将文件移动到项目文件夹的 .removed 子文件夹
                 try:
-                    removed_dir = os.path.join(os.path.dirname(protocol_path), ".removed")
-                    os.makedirs(removed_dir, exist_ok=True)
-                    new_path = os.path.join(removed_dir, file_name)
+                    # 将文件移到用户数据目录下的 trash 文件夹，避免污染项目目录
+                    trash_dir = os.path.join(os.path.expanduser('~'), '.serialdatacompare', 'trash')
+                    os.makedirs(trash_dir, exist_ok=True)
+                    new_path = os.path.join(trash_dir, file_name)
                     
                     # 如果目标已存在，添加时间戳
                     if os.path.exists(new_path):
                         import time
                         base, ext = os.path.splitext(file_name)
-                        new_path = os.path.join(removed_dir, f"{base}_{int(time.time())}{ext}")
+                        new_path = os.path.join(trash_dir, f"{base}_{int(time.time())}{ext}")
                     
                     # 使用复制+删除以支持跨设备移动
                     shutil.copy2(protocol_path, new_path)
@@ -717,7 +718,7 @@ class ProjectNavigationWidget(QWidget):
                     
                     InfoBar.success(
                         title="移除成功",
-                        content=f"协议 {file_name} 已从项目中移除\n文件已移至 .removed 文件夹",
+                        content=f"协议 {file_name} 已从项目中移除\n文件已移至 ~/.serialdatacompare/trash/",
                         orient=Qt.Horizontal,
                         isClosable=True,
                         position=InfoBarPosition.TOP,

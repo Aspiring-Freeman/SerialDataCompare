@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from PySide6.QtCore import Signal, Qt
 
 from qfluentwidgets import (
-    ScrollArea, SettingCardGroup, PushSettingCard,
+    ScrollArea, SettingCardGroup, PushSettingCard, SwitchSettingCard,
     HyperlinkCard, CardWidget, TitleLabel, BodyLabel, PushButton,
     setTheme, Theme, FluentIcon as FIF, InfoBar, InfoBarPosition,
     setThemeColor
@@ -100,6 +100,16 @@ class SettingsInterface(QWidget):
         )
         self.color_card.clicked.connect(self.show_color_dialog)
         group.addSettingCard(self.color_card)
+        
+        # 自动切换到帧详情开关
+        self.auto_switch_card = SwitchSettingCard(
+            FIF.SYNC,
+            "自动切换到帧详情",
+            "选中帧时自动切换到帧详情页面（关闭后仅更新内容，不跳转页面）"
+        )
+        self.auto_switch_card.setChecked(True)  # 默认开启
+        self.auto_switch_card.checkedChanged.connect(self._on_auto_switch_changed)
+        group.addSettingCard(self.auto_switch_card)
         
         self.layout().addWidget(group)
     
@@ -235,7 +245,7 @@ class SettingsInterface(QWidget):
             text="检查更新",
             icon=FIF.INFO,
             title="版本",
-            content="SerialDataCompare v2.0.0"
+            content="SerialDataCompare v1.6.0"
         )
         group.addSettingCard(version_card)
         
@@ -254,3 +264,14 @@ class SettingsInterface(QWidget):
             duration=2000,
             parent=self
         )
+    
+    def init_prefs(self, main_window):
+        """从主窗口加载用户偏好设置并同步 UI 状态"""
+        self._main_window = main_window
+        auto_switch = main_window.get_pref('auto_switch_to_detail', True)
+        self.auto_switch_card.setChecked(auto_switch)
+    
+    def _on_auto_switch_changed(self, is_checked: bool):
+        """自动切换开关变化"""
+        if hasattr(self, '_main_window') and self._main_window:
+            self._main_window.set_pref('auto_switch_to_detail', is_checked)

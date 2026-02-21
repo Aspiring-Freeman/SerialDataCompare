@@ -3,7 +3,7 @@
 数据模型模块 - 协议配置和字段定义
 """
 
-from typing import List, Optional, Dict, Any
+from typing import ClassVar, List, Optional, Dict, Any
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -189,9 +189,21 @@ class ChecksumConfig:
     # 当 checksum_type 为 CRC_CUSTOM 时使用
     crc_params: Optional[CRCParameters] = None
     
-    # 旧版兼容字段（如果新字段为None则使用这些）
-    start_offset: int = 0  # 从帧头后第几个字节开始（0表示紧跟帧头）
-    end_offset: int = -1   # 到帧尾前第几个字节结束（-1表示到校验码前）
+    # ============ 旧版兼容字段（已弃用） ============
+    # 使用 checksum_start / checksum_end 代替这些字段。
+    # 保留是为了读取旧版 JSON 配置，新配置不应再写入这些字段。
+    # start_offset 语义：0 = 紧跟帧头，-1 = 从帧头（字节0）开始
+    # end_offset 语义：0 = 到校验码位置，-1 = 整帧减1，
+    #   负数 = 从帧尾向前偏移，小正数(<100) = 相对 data_start 偏移，
+    #   大正数(>=100) = 绝对位置
+    start_offset: int = 0   # [已弃用] → 请改用 checksum_start
+    end_offset: int = -1    # [已弃用] → 请改用 checksum_end
+    
+    # ---- 旧版 offset 语义常量 (用于 checksum.py 解析) ---- #
+    LEGACY_START_FROM_ZERO: ClassVar[int] = -1       # start_offset == -1 → data_start = 0
+    LEGACY_END_AT_CHECKSUM: ClassVar[int] = 0        # end_offset == 0  → data_end = 校验码位置
+    LEGACY_END_FRAME_MINUS1: ClassVar[int] = -1      # end_offset == -1 → data_end = len - 1
+    LEGACY_RELATIVE_THRESHOLD: ClassVar[int] = 100   # end_offset < 100 为相对偏移，>= 100 为绝对位置
     
     def __post_init__(self):
         """数据验证"""
@@ -486,6 +498,9 @@ class FieldDefinition:
             
             # 应用缩放公式
             result = num_value * self.multiplier + self.value_offset
+            # 消除浮点精度误差：当指定了小数位数时，提前 round
+            if self.decimal_places >= 0:
+                result = round(result, self.decimal_places)
             return result
         except (ValueError, TypeError):
             return value
@@ -665,16 +680,22 @@ class ProtocolConfig:
     
     def __post_init__(self):
         """数据验证"""
-        # 确保帧头帧尾有默认值
-        if not self.frame_header:
-            self.frame_header = "68"
-        if not self.frame_tail:
-            self.frame_tail = "16"
+        # 允许帧头帧尾为空（表示不使用帧头/帧尾定位）
+        if self.frame_header is None:
+            self.frame_header = ""
+        if self.frame_tail is None:
+            self.frame_tail = ""
         
-        # 确保帧头帧尾是有效的十六进制
+        # 去除空格，统一格式
+        self.frame_header = self.frame_header.replace(' ', '').upper()
+        self.frame_tail = self.frame_tail.replace(' ', '').upper()
+        
+        # 确保非空值是有效的十六进制
         try:
-            int(self.frame_header, 16)
-            int(self.frame_tail, 16)
+            if self.frame_header:
+                int(self.frame_header, 16)
+            if self.frame_tail:
+                int(self.frame_tail, 16)
         except (ValueError, TypeError):
             raise ValueError("帧头或帧尾不是有效的十六进制字符串")
     
@@ -710,12 +731,12 @@ class ProtocolConfig:
             self.fields[index + 1].order = index + 1
     
     def get_header_bytes(self) -> bytes:
-        """获取帧头字节"""
-        return bytes.fromhex(self.frame_header)
+        """获取帧头字节，空字符串返回 b''"""
+        return bytes.fromhex(self.frame_header) if self.frame_header else b''
     
     def get_tail_bytes(self) -> bytes:
-        """获取帧尾字节"""
-        return bytes.fromhex(self.frame_tail)
+        """获取帧尾字节，空字符串返回 b''"""
+        return bytes.fromhex(self.frame_tail) if self.frame_tail else b''
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典（用于JSON保存）"""
@@ -763,34 +784,96 @@ class ProtocolConfig:
     
     @staticmethod
     def _convert_checksum_type(checksum_type_str: str) -> ChecksumType:
-        """转换校验类型字符串为枚举（支持多种格式）"""
+        """转换校验类型字符串为枚举（支持多种格式，包含中英文别名）"""
         # 转换为大写进行匹配
-        type_upper = checksum_type_str.upper()
+        type_upper = checksum_type_str.upper().strip()
         
-        # 映射表（只包含实际存在的枚举值）
+        # 映射表：覆盖所有枚举值的英文缩写和中文别名
         type_mapping = {
+            # 无校验
+            'NONE': ChecksumType.NONE,
+            '无校验': ChecksumType.NONE,
+            '无': ChecksumType.NONE,
+            # 累加和
             'SUM': ChecksumType.SUM,
             '累加和': ChecksumType.SUM,
+            'SUM16': ChecksumType.SUM16,
+            '累加和16位': ChecksumType.SUM16,
+            '累加和16': ChecksumType.SUM16,
+            # 异或
             'XOR': ChecksumType.XOR,
             '异或': ChecksumType.XOR,
             '异或校验': ChecksumType.XOR,
+            'XOR16': ChecksumType.XOR16,
+            '异或校验16位': ChecksumType.XOR16,
+            '异或16': ChecksumType.XOR16,
+            # CRC-8 系列
+            'CRC8': ChecksumType.CRC8,
+            'CRC-8': ChecksumType.CRC8,
+            'CRC-8/ITU': ChecksumType.CRC8_ITU,
+            'CRC8/ITU': ChecksumType.CRC8_ITU,
+            'CRC-8/ROHC': ChecksumType.CRC8_ROHC,
+            'CRC8/ROHC': ChecksumType.CRC8_ROHC,
+            'CRC-8/MAXIM': ChecksumType.CRC8_MAXIM,
+            'CRC8/MAXIM': ChecksumType.CRC8_MAXIM,
+            # CRC-16 系列
             'CRC16': ChecksumType.CRC16,
+            'CRC-16': ChecksumType.CRC16,
+            'CRC16/IBM': ChecksumType.CRC16_IBM,
+            'CRC-16/IBM': ChecksumType.CRC16_IBM,
+            'CRC16/MODBUS': ChecksumType.CRC16_MODBUS,
+            'CRC-16/MODBUS': ChecksumType.CRC16_MODBUS,
+            'MODBUS': ChecksumType.CRC16_MODBUS,
+            'CRC16/CCITT': ChecksumType.CRC16_CCITT,
+            'CRC-16/CCITT': ChecksumType.CRC16_CCITT,
+            'CRC16/CCITT-FALSE': ChecksumType.CRC16_CCITT_FALSE,
+            'CRC-16/CCITT-FALSE': ChecksumType.CRC16_CCITT_FALSE,
+            'CRC16/XMODEM': ChecksumType.CRC16_XMODEM,
+            'CRC-16/XMODEM': ChecksumType.CRC16_XMODEM,
+            'XMODEM': ChecksumType.CRC16_XMODEM,
+            'CRC16/X25': ChecksumType.CRC16_X25,
+            'CRC-16/X25': ChecksumType.CRC16_X25,
+            'CRC16/DNP': ChecksumType.CRC16_DNP,
+            'CRC-16/DNP': ChecksumType.CRC16_DNP,
+            'CRC16/USB': ChecksumType.CRC16_USB,
+            'CRC-16/USB': ChecksumType.CRC16_USB,
+            'CRC16/MAXIM': ChecksumType.CRC16_MAXIM,
+            'CRC-16/MAXIM': ChecksumType.CRC16_MAXIM,
+            # CRC-32 系列
             'CRC32': ChecksumType.CRC32,
-            'NONE': ChecksumType.NONE,
-            '无校验': ChecksumType.NONE,
-            '无': ChecksumType.NONE
+            'CRC-32': ChecksumType.CRC32,
+            'CRC32/MPEG-2': ChecksumType.CRC32_MPEG2,
+            'CRC-32/MPEG-2': ChecksumType.CRC32_MPEG2,
+            'CRC32/POSIX': ChecksumType.CRC32_POSIX,
+            'CRC-32/POSIX': ChecksumType.CRC32_POSIX,
+            # 其他
+            'LRC': ChecksumType.LRC,
+            'BCC': ChecksumType.BCC,
+            'FLETCHER16': ChecksumType.FLETCHER16,
+            'FLETCHER-16': ChecksumType.FLETCHER16,
+            'FLETCHER32': ChecksumType.FLETCHER32,
+            'FLETCHER-32': ChecksumType.FLETCHER32,
+            'ADLER32': ChecksumType.ADLER32,
+            'ADLER-32': ChecksumType.ADLER32,
+            # 自定义
+            'CRC_CUSTOM': ChecksumType.CRC_CUSTOM,
+            '自定义CRC': ChecksumType.CRC_CUSTOM,
         }
         
-        # 查找匹配
+        # 查找匹配（大小写不敏感）
         for key, value in type_mapping.items():
             if type_upper == key.upper() or checksum_type_str == key:
                 return value
         
-        # 如果都不匹配，尝试直接创建枚举
+        # 如果都不匹配，尝试直接创建枚举（匹配 .value）
         try:
             return ChecksumType(checksum_type_str)
         except ValueError:
             # 默认返回无校验
+            import logging
+            logging.getLogger(__name__).warning(
+                f"未知校验类型 '{checksum_type_str}'，回退为无校验"
+            )
             return ChecksumType.NONE
     
     @classmethod

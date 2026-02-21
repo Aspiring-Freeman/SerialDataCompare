@@ -7,13 +7,12 @@ from qfluentwidgets import (
     MessageBoxBase, SubtitleLabel, BodyLabel,
     TableWidget, PushButton, TextEdit, MessageBox
 )
-from core.analysis_history import AnalysisHistory
 
 
 class HistoryDialog(MessageBoxBase):
     """历史记录对话框"""
     
-    def __init__(self, history_manager: AnalysisHistory, parent=None):
+    def __init__(self, history_manager, parent=None):
         super().__init__(parent)
         self.history_manager = history_manager
         self.titleLabel = SubtitleLabel("分析历史记录", self)
@@ -40,7 +39,9 @@ class HistoryDialog(MessageBoxBase):
         
         # 详细信息标题
         detail_label = BodyLabel("详细信息:")
-        detail_label.setStyleSheet("font-weight: bold;")
+        font = detail_label.font()
+        font.setBold(True)
+        detail_label.setFont(font)
         self.viewLayout.addWidget(detail_label)
         
         # 详细信息文本
@@ -94,7 +95,11 @@ class HistoryDialog(MessageBoxBase):
             return
         
         row = selected_items[0].row()
-        record = self.history_manager.get_record(row)
+        # 兼容 AnalysisHistoryDB（按索引获取）和旧 AnalysisHistory（直接索引）
+        if hasattr(self.history_manager, 'get_record_by_index'):
+            record = self.history_manager.get_record_by_index(row)
+        else:
+            record = self.history_manager.get_record(row)
         
         if record:
             # 显示详细信息

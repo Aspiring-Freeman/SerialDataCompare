@@ -7,11 +7,13 @@ from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime
 
-from utils import atomic_write_json
+from utils import atomic_write_json, safe_load_json
 
 
 class AnalysisHistory:
     """分析历史记录管理器"""
+    
+    SCHEMA_VERSION = 2  # 当前存储格式版本
     
     def __init__(self, max_history: int = 20):
         """
@@ -26,20 +28,30 @@ class AnalysisHistory:
         self.history: List[Dict[str, Any]] = self._load_history()
     
     def _load_history(self) -> List[Dict[str, Any]]:
-        """加载历史记录"""
-        if not self.history_file.exists():
-            return []
+        """加载历史记录（带备份恢复和版本迁移）"""
+        data = safe_load_json(str(self.history_file), default={})
         
-        try:
-            with open(self.history_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"加载分析历史记录失败: {e}")
-            return []
+        # 兼容旧格式：如果根类型为 list，迁移为带版本号的格式
+        if isinstance(data, list):
+            return data
+        
+        if isinstance(data, dict):
+            schema_version = data.get('schema_version', 1)
+            records = data.get('records', [])
+            if not isinstance(records, list):
+                return []
+            # 未来可根据 schema_version 做增量迁移
+            return records
+        
+        return []
     
     def _save_history(self):
-        """保存历史记录 - 使用原子写入确保数据安全"""
-        if not atomic_write_json(str(self.history_file), self.history):
+        """保存历史记录 - 使用原子写入确保数据安全，带 schema_version"""
+        payload = {
+            'schema_version': self.SCHEMA_VERSION,
+            'records': self.history
+        }
+        if not atomic_write_json(str(self.history_file), payload):
             print("保存分析历史记录失败")
     
     def add_analysis(self, protocol_name: str, input_data: str, 

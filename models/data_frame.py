@@ -193,16 +193,17 @@ class DataFrame:
     
     def get_detailed_info_html(self, color_config=None) -> str:
         """获取带颜色的HTML格式详细信息"""
+        from utils.theme_helper import ThemeHelper as TH
         html_parts = []
         html_parts.append("<html><head><style>")
-        html_parts.append("body { font-family: 'Courier New', monospace; font-size: 10pt; }")
-        html_parts.append(".header { font-weight: bold; background-color: #e0e0e0; padding: 5px; }")
+        html_parts.append(f"body {{ {TH.html_body_style()} }}")
+        html_parts.append(f".header {{ font-weight: bold; background-color: {TH.html_header_bg()}; padding: 5px; }}")
         html_parts.append(".section { margin-top: 10px; }")
         html_parts.append(".field { margin: 2px 0; }")
         html_parts.append(".field-name { display: inline-block; width: 250px; }")
         html_parts.append(".field-value { display: inline; }")
-        html_parts.append(".error { color: red; font-weight: bold; }")
-        html_parts.append(".success { color: green; font-weight: bold; }")
+        html_parts.append(f".error {{ color: {TH.error_text_color()}; font-weight: bold; }}")
+        html_parts.append(f".success {{ color: {TH.success_color()}; font-weight: bold; }}")
         html_parts.append("</style></head><body>")
         
         html_parts.append(f"<div class='header'>数据帧 #{self.frame_number}</div>")
